@@ -5,7 +5,7 @@
 	Injects keystrokes into a read() function called on a login screen.
 	WARNING:
 	This program automatically moves the old startup file to "/.startup", which gets called on by DUCCY (which is now "/startup").
-  To start the injector, press "Left Shift" when the normal login screen shows.
+  	To start the injector, press "Left Shift" when the normal login screen shows.
 
 --]]
 
