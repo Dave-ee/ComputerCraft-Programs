@@ -1,0 +1,76 @@
+--[[
+    
+    Created by Dave-ee Jones
+    
+    Sniff packets sent across the broadcast and receiver channels.
+
+--]]
+
+local myModem = peripheral.wrap("top")
+
+--myModem.open(0)
+--myModem.open(1)
+--myModem.open(2)
+myModem.open(65535)
+myModem.open(65533)
+
+local bRunning = true
+
+while bRunning do
+
+  local event,a,b,c,d,e = os.pullEvent()
+
+  if event == "modem_message" then
+    
+    term.setTextColor(colors.yellow)
+    write("Modem Side: ")
+    term.setTextColor(colors.white)
+    print(a)
+    if b == 65535 then
+      b = "BROADCAST CHANNEL"
+    elseif b == 65533 then
+      b = "RECEIVER CHANNEL"
+    end
+    term.setTextColor(colors.yellow)
+    write("Channel / Receiver ID: ")
+    term.setTextColor(colors.white)
+    print(b)
+    term.setTextColor(colors.yellow)
+    write("Sender ID: ")
+    term.setTextColor(colors.white)
+    print(c)
+    term.setTextColor(colors.yellow)
+    if type(d) == "table" then
+      write("Message: ")
+      term.setTextColor(colors.white)
+      for i,v in pairs(d) do
+        if tostring(i) == "message" then
+          if type(v) == "table" then
+            local msg = "{ "..v[1]
+            for o=2,#v do
+              msg = msg..", "..v[o]
+            end
+            print(msg.." }")
+          else
+            print(tostring(v))
+          end
+        end
+      end
+    end
+    term.setTextColor(colors.yellow)
+    write("Distance: ")
+    term.setTextColor(colors.white)
+    print(e)
+    print()
+
+  elseif event == "key" then
+
+    if a == keys.enter then
+
+      bRunning = false
+
+    end
+
+  end
+
+end
