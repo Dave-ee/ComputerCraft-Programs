@@ -1,0 +1,98 @@
+--[[
+
+	Created by Dave-ee Jones
+	
+	Injects keystrokes into a read() function called on a login screen.
+	WARNING:
+	This program automatically moves the old startup file to "/.startup", which gets called on by DUCCY (which is now "/startup").
+  To start the injector, press "Left Shift" when the normal login screen shows.
+
+--]]
+
+-- Word dictionary
+local tDictionary = {
+	"pass",
+	"test",
+	"admin",
+	"password"
+}
+
+-- Time inbetween guesses
+local nTime = 0
+local nIndex = 1
+local bRunning = false
+
+-- Setup environment
+local prog = shell.getRunningProgram()
+if prog == "startup" then
+	if fs.exists("/.duccy") then
+		local file = fs.open("/.duccy","r")
+		fs.delete(file.readLine())
+		file.close()
+		fs.delete("/.duccy")
+		os.reboot()
+	end
+else
+	if fs.exists("/startup") then
+		fs.move("/startup","/.startup")
+	end
+	local file = fs.open("/.duccy","w")
+	file.writeLine("/"..prog)
+	file.close()
+	fs.copy("/"..prog,"/startup")
+	os.reboot()
+end
+
+-- Injection, runs in parallel with the start program
+local function inject()
+	while bRunning do
+		sleep(nTime)
+		if #tDictionary >= nIndex then
+			for i=1,#tDictionary[nIndex] do
+				os.queueEvent("char",string.sub(tDictionary[nIndex],i,i))
+			end
+			os.queueEvent("key",keys.enter)
+			nIndex = nIndex + 1
+		else
+			bRunning = false
+		end
+	end
+end
+
+-- Runs the start program (or a test read() function)
+local function run()
+	--[[while true do
+		write("Password: ")
+		local input = read()
+		if input == "password" then
+			print("Access granted.")
+			break
+		else
+			print("Access denied.")
+		end
+	end--]]
+	shell.run("/.startup")
+end
+
+-- The coroutines
+local co1 = coroutine.create(inject)
+local co2 = coroutine.create(run)
+
+-- The loop
+local e = {}
+while true do
+	if bRunning then
+		coroutine.resume(co1,unpack(e))
+	end
+	coroutine.resume(co2,unpack(e))
+	e = { os.pullEvent() }
+	-- Toggle the injector
+	if e[1] == "key" and e[2] == keys["leftShift"] then
+		bRunning = true
+	end
+	-- Detects if the startup program has stopped or not
+	if coroutine.status(co2) == "dead" then
+		bRunning = false
+		break
+	end
+end
