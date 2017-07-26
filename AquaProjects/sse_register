@@ -1,0 +1,140 @@
+tColors = {
+  ["m_bg"] = colors.white,
+  ["m_text"] = colors.black,
+  ["t_bg"] = colors.blue,
+  ["t_text"] = colors.white,
+  ["b1_bg"] = colors.cyan,
+  ["b2_bg"] = colors.cyan,
+  ["b3_bg"] = colors.green,
+  ["b_text"] = colors.white  
+}
+
+tButton = {
+  ["b1_x"] = 4,
+  ["b1_y"] = 4,
+  ["b1_w"] = 20,
+  ["b1_h"] = 4,
+  ["b1_text"] = "Username",
+  ["b2_x"] = 4,
+  ["b2_y"] = 10,
+  ["b2_w"] = 20,
+  ["b2_h"] = 4,
+  ["b2_text"] = "Password",
+  ["b3_x"] = 4,
+  ["b3_y"] = 16,
+  ["b3_w"] = 12,
+  ["b3_h"] = 3,
+  ["b3_text"] = "Register",
+}
+
+userInput = ""
+passInput = ""
+passInputN = ""
+bRunning = true
+
+function drawBox(x,y,w,h,cb,ct,text,ce,extra)
+  term.setBackgroundColor(cb)
+  term.setTextColor(ct)
+  term.setCursorPos(x,y)
+  for i=1,h do
+    for i=1,w do
+      write(" ")
+    end
+    term.setCursorPos(x,y+i)
+  end
+  if h == 2 or h == 4 or h == 6 or h == 8 or h == 10 then
+  	term.setCursorPos(x+(w/2)-(#text/2),y+(h/2)-1)
+  else
+  	term.setCursorPos(x+(w/2)-(#text/2),y+(h/2))
+  end
+  print(text)
+  term.setCursorPos(x+(w/2)-(#extra/2),y+(h/2)+1)
+  term.setTextColor(ce)
+  print(extra)
+end
+
+function dispSuccess()
+  drawBox(tButton["b3_x"],tButton["b3_y"],14,tButton["b3_h"],colors.lime,tColors["b_text"],"Successful",tColors["b_text"],"")
+  sleep(1)
+  bRunning = false
+end
+
+function dispFailure()
+  drawBox(tButton["b3_x"],tButton["b3_y"],18,tButton["b3_h"],colors.red,tColors["b_text"],"Already exists",tColors["b_text"],"")
+  sleep(1)
+  drawBox(tButton["b3_x"],tButton["b3_y"],tButton["b3_w"],tButton["b3_h"],tColors["b3_bg"],tColors["b_text"],tButton["b3_text"],tColors["b_text"],"")
+end
+
+function redraw()
+  term.setBackgroundColor(tColors["m_bg"])
+  term.clear()
+  term.setCursorPos(2,2)
+  term.setBackgroundColor(tColors["t_bg"])
+  term.clearLine()
+  term.setCursorPos(2,2)
+  term.setTextColor(tColors["t_text"])
+  term.setBackgroundColor(tColors["t_bg"])
+  print("Security System Example")
+  drawBox(tButton["b1_x"],tButton["b1_y"],tButton["b1_w"],tButton["b1_h"],tColors["b1_bg"],tColors["b_text"],tButton["b1_text"],colors.lightGray,userInput)
+  drawBox(tButton["b2_x"],tButton["b2_y"],tButton["b2_w"],tButton["b2_h"],tColors["b2_bg"],tColors["b_text"],tButton["b2_text"],colors.lightGray,passInputN)
+  drawBox(tButton["b3_x"],tButton["b3_y"],tButton["b3_w"],tButton["b3_h"],tColors["b3_bg"],tColors["b_text"],tButton["b3_text"],colors.lightGray,"")
+end
+
+function checkCreds()
+	local success = false
+	if not fs.exists("/sse/.users/."..userInput) then
+	  local userFile = fs.open("/sse/.users/."..userInput,"w")
+	  userFile.writeLine(passInput)
+	  userFile.close()
+	  success = true
+	end
+	if success == false then
+		return false
+	else
+		return true
+	end
+end
+
+redraw()
+while bRunning do
+  local event, button, X, Y = os.pullEvent()
+  if event == "mouse_click" then
+    if button == 1 then
+      if X >= tButton["b1_x"] and X <= (tButton["b1_x"] + tButton["b1_w"] - 1) and Y >= tButton["b1_y"] and Y <= (tButton["b1_y"] + tButton["b1_h"] - 1) then
+        term.setTextColor(colors.lightGray)
+        term.setBackgroundColor(colors.gray)
+      	term.setCursorPos(tButton["b1_x"]+1,tButton["b1_y"]+tButton["b1_h"]-2)
+      	print("                  ")
+      	term.setCursorPos(tButton["b1_x"]+1,tButton["b1_y"]+tButton["b1_h"]-2)
+      	userInput = read()
+      	redraw()
+      elseif X >= tButton["b2_x"] and X <= (tButton["b2_x"] + tButton["b2_w"] - 1) and Y >= tButton["b2_y"] and Y <= (tButton["b2_y"] + tButton["b2_h"] - 1) then
+        passInputN = ""
+        term.setTextColor(colors.lightGray)
+        term.setBackgroundColor(colors.gray)
+        term.setCursorPos(tButton["b2_x"]+1,tButton["b2_y"]+tButton["b2_h"]-2)
+        print("                  ")
+        term.setCursorPos(tButton["b2_x"]+1,tButton["b2_y"]+tButton["b2_h"]-2)
+      	passInput = read("*")
+      	for i=1,#passInput do
+      	  passInputN = passInputN .. "*"
+      	end
+		redraw()
+      elseif X >= tButton["b3_x"] and X <= (tButton["b3_x"] + tButton["b3_w"] - 1) and Y >= tButton["b3_y"] and Y <= (tButton["b3_y"] + tButton["b3_h"] - 1) then
+		local bReturned = checkCreds()
+        if bReturned == true then
+          dispSuccess()
+        else
+          dispFailure()
+          redraw()
+        end
+      end 
+    end
+  end
+end
+
+term.setBackgroundColor(colors.black)
+term.clear()
+term.setCursorPos(1,1)
+term.setTextColor(colors.yellow)
+print(os.version())

@@ -1,0 +1,85 @@
+tColors = {
+  ["m_bg"] = colors.white,
+  ["m_text"] = colors.black,
+  ["t_bg"] = colors.blue,
+  ["t_text"] = colors.white,
+  ["b1_bg"] = colors.green,
+  ["b2_bg"] = colors.cyan,
+  ["b3_bg"] = colors.orange,
+  ["b_text"] = colors.white  
+}
+
+tButton = {
+  ["b1_x"] = 4,
+  ["b1_y"] = 6,
+  ["b1_w"] = 9,
+  ["b1_h"] = 3,
+  ["b1_text"] = "Login",
+  ["b2_x"] = 4,
+  ["b2_y"] = 10,
+  ["b2_w"] = 12,
+  ["b2_h"] = 3,
+  ["b2_text"] = "Register",
+  ["b3_x"] = 4,
+  ["b3_y"] = 14,
+  ["b3_w"] = 12,
+  ["b3_h"] = 3,
+  ["b3_text"] = "Shutdown",
+}
+
+function drawBox(x,y,w,h,cb,ct,text)
+  term.setBackgroundColor(cb)
+  term.setTextColor(ct)
+  term.setCursorPos(x,y)
+  for i=1,h do
+    for i=1,w do
+      write(" ")
+    end
+    term.setCursorPos(x,y+i)
+  end
+  term.setCursorPos(x+(w/2)-(#text/2),y+(h/2))
+  print(text)
+end
+
+if not fs.exists("/sse/sse_login") or not fs.exists("/sse/sse_register") then
+  if not fs.exists("/sse/.users/") then
+    if not fs.exists("/sse") then
+	  error("No installation of SSE found")
+	else
+	  fs.makeDir("/sse/.users")
+	end
+  else
+	error("Installation incomplete (missing Register/Login pages)")
+  end
+end
+
+term.setBackgroundColor(tColors["m_bg"])
+term.clear()
+term.setCursorPos(1,2)
+term.setBackgroundColor(tColors["t_bg"])
+term.clearLine()
+term.setCursorPos(2,2)
+term.setTextColor(tColors["t_text"])
+print("Security System Example")
+
+drawBox(tButton["b1_x"],tButton["b1_y"],tButton["b1_w"],tButton["b1_h"],tColors["b1_bg"],tColors["b_text"],tButton["b1_text"])
+drawBox(tButton["b2_x"],tButton["b2_y"],tButton["b2_w"],tButton["b2_h"],tColors["b2_bg"],tColors["b_text"],tButton["b2_text"])
+drawBox(tButton["b3_x"],tButton["b3_y"],tButton["b3_w"],tButton["b3_h"],tColors["b3_bg"],tColors["b_text"],tButton["b3_text"])
+
+bRunning = true
+while bRunning do
+  local event, button, X, Y = os.pullEvent()
+  if event == "mouse_click" then
+    if button == 1 then
+   	  if X >= tButton["b1_x"] and X <= (tButton["b1_x"] + tButton["b1_w"] - 1) and Y >= tButton["b1_y"] and Y <= (tButton["b1_y"] + tButton["b1_h"] - 1) then
+        shell.run("/sse/sse_login")
+   	    bRunning = false
+   	  elseif X >= tButton["b2_x"] and X <= (tButton["b2_x"] + tButton["b2_w"] - 1) and Y >= tButton["b2_y"] and Y <= (tButton["b2_y"] + tButton["b2_h"] - 1) then
+   	  	shell.run("/sse/sse_register")
+   	  	bRunning = false
+   	  elseif X >= tButton["b3_x"] and X <= (tButton["b3_x"] + tButton["b3_w"] - 1) and Y >= tButton["b3_y"] and Y <= (tButton["b3_y"] + tButton["b3_h"] - 1) then
+   	  	os.shutdown()
+   	  end
+    end
+  end
+end
