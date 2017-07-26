@@ -15,23 +15,27 @@ local kStartKey = keys.leftShift -- Key to start the injection
 local bReplaceStartup = false -- Replace startup file and run at startup
 local bFloppyCopy = false -- Copy entire fs to floppy disk when Duccy runs
 local bOneAtATime = false -- Press "Left Shift" to inject 1 password, instead of all at once
-local tFloppyCopy_IgnoreList = { -- List of files/directories to ignore when copying FS
+-- List of files/directories to ignore when copying FS
+local tFloppyCopy_IgnoreList = { 
 	rom = true,
 	disk = true
 }
--- END CONFIG --
-
 -- Word dictionary
 local tDictionary = {
 	"pass",
 	"test",
 	"admin",
-	"password"
+	"password",
+	"",
+	"1234",
+	"123456789",
+	"1234567890",
+	" "
 }
+-- END CONFIG --
 
 local nIndex = 1
 local bRunning = false
-local bWaiting = false
 
 -- Setup environment [bReplaceStartup]
 if bReplaceStartup then
