@@ -10,7 +10,6 @@
   - Also means you can select a textfield before you start it (some login screens you have to click on the textfield)
 
 ### V3 (Unreleased)
-- ? Automatically copies all files on the computer to a floppy drive (if there is one and you tell it to)
-- ? Detects which password entered was the right one and sends it to a floppy drive (or even an online Pastebin file)
-- ? Fixed some issues with sleep functions
-- ? Floppy-driveable, initiates from the floppy so nothing is saved on the computer itself
+- Automatically copies all files on the computer to a floppy drive (if there is one and you tell it to)
+- Options
+  - Allows you to set variables, telling it to replace the startup program, copy to floppy, set the time inbetween guesses etc.
