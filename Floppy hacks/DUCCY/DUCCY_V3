@@ -10,10 +10,12 @@
 --]]
 
 -- CONFIG: CHANGE AS NEEDED --
-local nTime = 0
-local bReplaceStartup = false
-local bFloppyCopy = false
-local tFloppyCopy_IgnoreList = {
+local nTime = 0 -- Time inbetween guesses
+local kStartKey = keys.leftShift -- Key to start the injection
+local bReplaceStartup = false -- Replace startup file and run at startup
+local bFloppyCopy = false -- Copy entire fs to floppy disk when Duccy runs
+local bOneAtATime = false -- Press "Left Shift" to inject 1 password, instead of all at once
+local tFloppyCopy_IgnoreList = { -- List of files/directories to ignore when copying FS
 	rom = true,
 	disk = true
 }
@@ -29,6 +31,7 @@ local tDictionary = {
 
 local nIndex = 1
 local bRunning = false
+local bWaiting = false
 
 -- Setup environment [bReplaceStartup]
 if bReplaceStartup then
@@ -72,6 +75,15 @@ local function inject()
 			end
 			os.queueEvent("key",keys.enter)
 			nIndex = nIndex + 1
+			if bOneAtATime then
+				while true do
+					local e, key = os.pullEvent()
+					if e == "key" and key == kStartKey then
+						break
+					end
+					sleep(0)
+				end
+			end
 		else
 			bRunning = false
 		end
@@ -80,17 +92,20 @@ end
 
 -- Runs the start program (or a test read() function)
 local function run()
-	--[[while true do
-		write("Password: ")
-		local input = read()
-		if input == "password" then
-			print("Access granted.")
-			break
-		else
-			print("Access denied.")
+	if not bReplaceStartup then
+		while true do
+			write("Password: ")
+			local input = read()
+			if input == "password" then
+				print("Access granted.")
+				break
+			else
+				print("Access denied.")
+			end
 		end
-	end--]]
-	shell.run("/.startup")
+	else
+		shell.run("/.startup")
+	end
 end
 
 -- The coroutines
@@ -106,7 +121,7 @@ while true do
 	coroutine.resume(co2,unpack(e))
 	e = { os.pullEvent() }
 	-- Toggle the injector
-	if e[1] == "key" and e[2] == keys["leftShift"] then
+	if e[1] == "key" and e[2] == kStartKey then
 		bRunning = true
 	end
 	-- Detects if the startup program has stopped or not
