@@ -12,4 +12,8 @@
 ### V3 (Unreleased)
 - Automatically copies all files on the computer to a floppy drive (if there is one and you tell it to)
 - Options
-  - Allows you to set variables, telling it to replace the startup program, copy to floppy, set the time inbetween guesses etc.
+  - Set key to start the injection (default: Left Shift)
+  - Set DUCCY to replace startup (default: Off)
+  - Set DUCCY to copy FS at runtime (default: Off)
+  - Set DUCCY to inject one password per key press (default: Off)
+  - Set DUCCY to ignore certain files/directories when copying FS
