@@ -1,0 +1,68 @@
+-- GUI Colors
+
+side = "top"
+tBarCol = colors.blue
+tBarTextCol = colors.white
+backColor = colors.white
+textColor = colors.blue
+
+nRequests = 0
+aRequests = 0
+dRequests = 0
+tPass = "password"
+
+rednet.open(side)
+
+
+function titleBar()
+  term.setTextColor(tBarTextCol)
+  term.setBackgroundColor(tBarCol)
+  term.setCursorPos(1,1)
+  term.clearLine()
+  term.setCursorPos(1,1)
+  print("[AquaServer] - The Roaming Server")
+end
+
+function drawBox(x,y,w,h,color)
+  mY = y
+  term.setCursorPos(x,y)
+  term.setBackgroundColor(color)
+  for i=1,h do
+    term.setCursorPos(x,mY)
+    print(string.rep(" ",w))
+    mY = mY + 1
+  end
+end
+
+function drawMS()
+  term.setBackgroundColor(backColor)
+  term.clear()
+  drawBox(5,5,42,12,colors.lightBlue)
+  term.setCursorPos(6,6)
+  print("Server booted.")
+  term.setCursorPos(6,7)
+  print("Server ID: "..os.getComputerID())
+  term.setCursorPos(6,9)
+  print(nRequests.." total requests this session.")
+  term.setCursorPos(6,10)
+  print(aRequests.." requests accepted this session.")
+  term.setCursorPos(6,11)
+  print(dRequests.." requests denied this session.")
+  term.setCursorPos(6,13)
+  print("Listening for requests...")
+  titleBar()
+end
+
+drawMS()
+while true do
+  senderID,message,distance = rednet.receive()
+  nRequests = nRequests + 1
+  if message == tPass then
+    rednet.send(senderID,"CODE_ACCEPT")
+    aRequests = aRequests + 1
+  else
+    rednet.send(senderID,"CODE_DECLINE")
+    dRequests = dRequests + 1
+  end
+  drawMS()
+end

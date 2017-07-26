@@ -1,0 +1,395 @@
+local term_current = term.current()
+
+local bRunning = true
+local parentShell = shell
+
+local tPrograms = fs.list("/rom/programs/")
+local tAliases = shell.aliases()
+local tProgramStack = {}
+local shell = {}
+local tEnv = {
+  ["shell"] = shell
+}
+
+local tCommandHistory = {}
+
+local sDir = (parentShell and parentShell.dir()) or "/"
+local sPath = (parentShell and parentShell.path()) or ".:/rom/programs"
+
+local term_width,term_height = term.getSize()
+local version = "0.3"
+
+local tShellColors = {}
+if tColors then
+  tShellColors = {
+    bg = tColors["menu"].bg,
+    fg = tColors["menu"].fg,
+    fgPrompt = tColors["taskbar"].start,
+    bgError = tColors["menu"].bg,
+    fgError = colors.red,
+    fgFolders = tColors["folder"].bg,
+    fgFiles = tColors["icon"].bg,
+    bgBootup = tColors["menu"].bg,
+    fgBootup = tColors["menu"].fg
+  }
+else
+  tShellColors = {
+    bg = colors.white,
+    fg = colors.black,
+    fgPrompt = colors.lime,
+    bgErrpr = colors.gray,
+    fgError = colors.red,
+    fgFolders = colors.lightBlue,
+    fgFiles = colors.blue,
+    bgBootup = colors.gray,
+    fgBootup = colors.green
+  }
+end
+
+local function showError(_title,_error)
+  term.setBackgroundColor(tShellColors.bgError)
+  term.setTextColor(tShellColors.fgError)
+  local x,y = term.getCursorPos()
+  term.clearLine()
+  term.setCursorPos(x,y)
+  print("[".._title.."] ".._error)
+end
+
+local tCommands = {
+  ["disk"] = function()
+    if fs.exists("/disk") and fs.isDir("/disk") then
+      sDir = "/disk"
+    end
+  end,
+  ["version"] = function()
+    print("Version: "..version)
+  end,
+  ["about"] = function()
+    print("djShell - Made for djOS by Dave-ee Jones")
+  end,
+  ["ls"] = function(ls_tArgs)
+    local ls_tWords = {}
+    if ls_tArgs then
+      for match in string.gmatch(ls_tArgs,"[^ \t]+") do
+        table.insert(ls_tWords,match)
+      end
+    end
+    local ls_sDir = shell.dir()
+    if ls_tWords[2] then
+      ls_sDir = shell.resolve(ls_tWords[2])
+    end
+    local ls_tAll = fs.list(ls_sDir)
+    local ls_tFiles = {}
+    local ls_tDirs = {}
+    for n, ls_sItem in pairs(ls_tAll) do
+      local ls_sPath = fs.combine(ls_sDir,ls_sItem)
+      if fs.isDir(ls_sPath) then
+        table.insert(ls_tDirs,ls_sItem)
+      else
+        table.insert(ls_tFiles,ls_sItem)
+      end
+    end
+    table.sort(ls_tDirs)
+    table.sort(ls_tFiles)
+    textutils.pagedTabulate(tShellColors.fgFolders,ls_tDirs,tShellColors.fgFiles,ls_tFiles)
+  end,
+  ["move"] = function()
+    showError("FS","Function removed")
+  end,
+  ["mkdir"] = function()
+    showError("FS","Function removed")
+  end,
+  ["mv"] = function()
+    showError("FS","Function removed")
+  end,
+  ["rename"] = function()
+    showError("FS","Function removed")
+  end,
+  ["edit"] = function()
+    showError("FS","Function removed")
+  end,
+  ["delete"] = function()
+    showError("FS","Function removed")
+  end,
+  ["set"] = function()
+    showError("FS","Function removed")
+  end,
+  ["lua"] = function()
+    showError("FS","Function removed")
+  end,
+  ["pastebin"] = function()
+    showError("FS","Function removed")
+  end,
+  ["wget"] = function()
+    showError("FS","Function removed")
+  end,
+  ["fg"] = function()
+    showError("FS","Function removed")
+  end,
+  ["bg"] = function()
+    showError("FS","Function removed")
+  end,
+  ["multishell"] = function()
+    showError("FS","Function removed")
+  end,
+  ["shell"] = function()
+    showError("FS","Function removed")
+  end,
+  ["exit"] = function()
+    bRunning = false
+  end,
+  ["cls"] = function()
+    term.setBackgroundColor(tShellColors.bg)
+    term.clear()
+    term.setCursorPos(1,1)
+  end,
+  ["path"] = function()
+    print("/"..shell.dir())
+  end,
+  ["history"] = function()
+    for i=1,#tCommandHistory do
+      print(i..": "..tCommandHistory[i])
+    end
+  end
+}
+tCommands["list"] = tCommands["ls"]
+tCommands["dir"] = tCommands["ls"]
+
+local function tokenise( ... )
+  local sLine = table.concat( { ... }, " ")
+  local tWords = {}
+  local bQuoted = false
+  for match in string.gmatch(sLine.."\"", "(.-)\"") do
+    if bQuoted then
+      table.insert(tWords,match)
+    else
+      for m in string.gmatch(match,"[^ \t]+") do
+        table.insert(tWords,m)
+      end
+    end
+    bQuoted = not bQuoted
+  end
+  return tWords
+end
+
+local function run( _sCommand, ... )
+	local sPath = shell.resolveProgram( _sCommand )
+	if sPath ~= nil then
+		tProgramStack[#tProgramStack + 1] = sPath
+   	local result = os.run( tEnv, sPath, ... )
+		tProgramStack[#tProgramStack] = nil
+		return result
+   	else
+    	printError( "No such program" )
+    	return false
+    end
+end
+
+local function runLine(_sLine)
+  local tWords = {}
+  for match in string.gmatch(_sLine,"[^ \t]+") do
+    table.insert(tWords,match)
+  end
+  local sCommand = tWords[1]
+  if sCommand then
+    return run(sCommand,unpack(tWords,2))
+  end
+  return false
+end
+
+function shell.run( ... )
+  local tWords = tokenise( ... )
+  local sCommand = tWords[1]
+  if sCommand then
+    return run(sCommand,table.unpack(tWords,2))
+  end
+  return false
+end
+
+function shell.resolve(_sPath)
+  local sStartChar = string.sub(_sPath,1,1)
+  if sStartChar == "/" or sStartChar == "\\" then
+    return fs.combine("",_sPath)
+  else
+    return fs.combine(sDir,_sPath)
+  end
+end
+
+function shell.resolveProgram(_sCommand)
+  if tAliases[_sCommand] then
+    _sCommand = tAliases[_sCommand]
+  end
+  local sStartChar = string.sub(_sCommand,1,1)
+  if sStartChar == "/" or sStartChar == "\\" then
+    local sPath = fs.combine("",_sCommand)
+    if fs.exists(sPath) and not fs.isDir(sPath) then
+      return sPath
+    end
+    return nil
+  end
+  for sPath in string.gmatch(sPath,"[^:]+") do
+    sPath = fs.combine(shell.resolve(sPath),_sCommand)
+    if fs.exists(sPath) and not fs.isDir(sPath) then
+      return sPath
+    end
+  end
+  return nil
+end
+
+function shell.programs(_bIncludeHidden)
+  local tItems = {}
+  for sPath in string.gmatch(sPath,"[^:]+") do
+    sPath = shell.resolve(sPath)
+    if fs.isDir(sPath) then
+      local tList = fs.list(sPath)
+      for n,sFile in pairs(tList) do
+        if not fs.isDir(fs.combine(sPath,sFile)) and (_bIncludeHidden or not string.sub(sFile,1,1) == ".") then
+          tItems[sFile] = true
+        end
+      end
+    end
+  end
+  local tItemList = {}
+  for sItem,b in pairs(tItems) do
+    table.insert(tItemList,sItem)
+  end
+  table.sort(tItemList)
+  return tItemList
+end
+
+function shell.getRunningProgram()
+  if #tProgramStack > 0 then
+    return tProgramStack[#tProgramStack]
+  end
+  return nil
+end
+
+function shell.setAlias(_sCommand,_sProgram)
+  tAliasas[_sCommand] = _sProgram
+end
+
+function shell.clearAlias(_sCommand)
+  tAliases[_sCommand] = nil
+end
+
+function shell.aliases()
+  local tCopy = {}
+  for sAlias,sCommand in pairs(tAliases) do
+    tCopy[sAlias] = sCommand
+  end
+  return tCopy
+end
+
+function shell.exit()
+  bRunning = false
+end
+
+function shell.dir()
+  return sDir
+end
+
+function shell.setDir(_sDir)
+  sDir = _sDir
+end
+
+function shell.path()
+  return sPath
+end
+
+function shell.setPath(_sPath)
+  sPath = _sPath
+end
+
+function getNameFromPath(_sPath)
+  local startIndex = 0
+  local bPossible = false
+  for i=1,#_sPath do
+    if string.sub(_sPath,i,i) == "/" then
+      if bPossible == false then
+        bPossible = true
+        startIndex = i + 1
+      else
+        startIndex = i + 1
+      end
+    end
+  end
+  return string.sub(_sPath,startIndex,#_sPath)
+end
+
+function printBoot(s)
+  term.setBackgroundColor(tShellColors.bgBootup)
+  local x,y = term.getCursorPos()
+  term.clearLine()
+  term.setCursorPos(x,y)
+  term.setTextColor(tShellColors.fgBootup)
+  print("[BOOT] "..s)
+end
+
+function printBar(s)
+  term.setBackgroundColor(tShellColors.bgBootup)
+  local x,y = term.getCursorPos()
+  term.clearLine()
+  term.setCursorPos(x,y)
+  term.setTextColor(tShellColors.fgPrompt)
+  print(s)  
+end
+
+term.setBackgroundColor(tShellColors.bg)
+term.clear()
+term.setCursorPos(1,1)
+printBar("DJSHELL "..version)
+printBoot("Initiating shell")
+sleep(0.3)
+printBoot("Checking for disk")
+local sDiskStartup = shell.resolveProgram("/disk/startup")
+if sDiskStartup then
+  sleep(0.3)
+  printBoot("Disk found")
+  printBoot("Boot disk?")
+  term.setBackgroundColor(tShellColors.bg)
+  term.setTextColor(tShellColors.fgPrompt)
+  write("> ")
+  term.setTextColor(tShellColors.fg)
+  local a = string.lower(read())
+  if a == "yes" or a == "y" or a == "true" or a == "1" then
+    printBoot("Booting")
+    sleep(0.3)
+    shell.run("/disk/startup")
+    term.setBackgroundColor(tShellColors.bg)
+    term.clear()
+    term.setCursorPos(1,1)
+    printBoot("Boot successful")
+    printBoot("Resuming shell")
+    sleep(0.3)
+  end
+else
+  printBoot("No disk found, starting shell")
+end
+
+while bRunning do
+  term.redirect(term_current)
+  term.setBackgroundColor(tShellColors.bg)
+  term.setTextColor(tShellColors.fgPrompt)
+  write("> ")
+  term.setTextColor(tShellColors.fg)
+  local sLine = read(nil,tCommandHistory)
+  table.insert(tCommandHistory,sLine)
+  sLine = string.lower(sLine)
+  local bFound = false
+  for _sCommand,_fCommand in pairs(tCommands) do
+    local _sLine = getNameFromPath(sLine)
+    if #_sLine >= #_sCommand then
+      if string.sub(_sLine,0,#_sCommand) == _sCommand then
+        _fCommand(sLine)
+        bFound = true
+      end
+    end
+  end
+  if not bFound then
+    runLine(sLine)
+  end
+end
+
+if parentShell == nil then
+  os.shutdown()
+end

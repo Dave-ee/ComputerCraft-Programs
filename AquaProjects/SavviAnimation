@@ -1,0 +1,327 @@
+-- Default Settings
+local tBarColor = colors.blue
+local tBarTextColor = colors.white
+local backColor = colors.white
+local textColor = colors.black
+local boxColor = colors.lightBlue
+
+frameCount = 10
+frameTime = 0.5
+animName = "Unnamed"
+playName = "Unnamed"
+
+main = true
+play = false
+create = false
+help = false
+
+local w,h = term.getSize()
+
+function drawBox(desX,desY,desW,desH,desCol)
+	moveY = desY
+	term.setCursorPos(desX,desY)
+	term.setBackgroundColor(desCol)
+	for i=1,desH do
+		term.setCursorPos(desX,moveY)
+		print(string.rep(" ",desW))
+		moveY = moveY + 1
+	end
+end
+
+function centerText(t,y)
+	local x = math.max(math.floor((w/2) - (#t/2)),y)
+	term.setCursorPos(x+1,y)
+	print(t)
+end
+
+function drawMain()
+	term.setBackgroundColor(colors.white)
+	term.setTextColor(textColor)
+	centerText("                    ",6)
+	centerText("  Create Animation  ",7)
+	centerText("                    ",8)
+	centerText("                  ",10)
+	centerText("  Play Animation  ",11)
+	centerText("                  ",12)
+	term.setCursorPos(45,18)
+	term.setBackgroundColor(boxColor)
+	print(" QUIT ")
+	term.setCursorPos(38,18)
+	term.setBackgroundColor(boxColor)
+	print(" HELP ")
+end
+
+function drawHelp()
+	term.setBackgroundColor(boxColor)
+	term.setTextColor(textColor)
+	centerText("Welcome to Savvi Animations!",6)
+	centerText("The Animation Creator and player",7)
+	centerText("by AutoLocK.",8)
+	centerText("To create an animation, just",10)
+	centerText("click Create Animation in the",11)
+	centerText("main screen.",12)
+	centerText("To play an animation, just",13)
+	centerText("click Play Animation in the",14)
+	centerText("main screen.",15)
+	term.setCursorPos(45,18)
+	term.setBackgroundColor(boxColor)
+	print(" QUIT ")
+	term.setCursorPos(38,18)
+	term.setBackgroundColor(boxColor)
+	print(" BACK ")
+	while true do
+		local event,button,X,Y = os.pullEvent()
+		if event == "mouse_click" then
+			if X >= 45 and X <= 50 and Y == 18 then
+				term.setBackgroundColor(colors.black)
+				term.clear()
+				term.setCursorPos(1,1)
+				break
+			elseif X >= 38 and X <= 43 and Y == 18 then
+				help = false
+				main = true
+				play = false
+				create = false
+				drawGUI()
+				break
+			end
+		end
+	end
+end
+
+function drawCreate()
+	while true do
+		term.setBackgroundColor(boxColor)
+		term.setTextColor(textColor)
+		term.setCursorPos(6,6)
+		print("Name:")
+		term.setCursorPos(11,6)
+		term.setBackgroundColor(colors.gray)
+		print(animName)
+		term.setCursorPos(6,8)
+		term.setBackgroundColor(boxColor)
+		print("Frames:")
+		term.setCursorPos(20,8)
+		print(frameCount)
+		term.setCursorPos(30,8)
+		print("- +")
+		term.setCursorPos(6,10)
+		print("Frame Time:")
+		term.setCursorPos(20,10)
+		print(frameTime)
+		term.setCursorPos(30,10)
+		print("- +")
+		term.setBackgroundColor(backColor)
+		centerText("        ",12)
+		centerText(" CREATE ",13)
+		centerText("        ",14)
+		term.setCursorPos(38,18)
+		term.setBackgroundColor(boxColor)
+		print(" BACK ")
+		local event,button,X,Y = os.pullEvent()
+		if event == "mouse_click" then
+			if X >= 38 and X <= 43 and Y == 18 then
+				help = false
+				main = true
+				play = false
+				create = false
+				drawGUI()
+				break
+			elseif X >= 11 and X <= 22 and Y == 6 then
+				term.setCursorPos(11,6)
+				term.setBackgroundColor(colors.gray)
+				term.setTextColor(tBarTextColor)
+				print("               ")
+				term.setCursorPos(11,6)
+				animName = read()
+				term.setTextColor(textColor)
+			elseif X == 30 and Y == 8 then
+				if frameCount >= 6 then
+					term.setCursorPos(20,8)
+					term.setBackgroundColor(boxColor)
+					print("      ")
+					frameCount = frameCount - 1
+				end
+			elseif X == 32 and Y == 8 then
+				if frameCount <= 100 then
+					term.setCursorPos(20,8)
+					term.setBackgroundColor(boxColor)
+					print("      ")
+					frameCount = frameCount + 1
+				end
+			elseif X == 30 and Y == 10 then
+				term.setCursorPos(20,10)
+				term.setBackgroundColor(boxColor)
+				print("      ")
+				frameTime = frameTime - 0.01
+			elseif X == 32 and Y == 10 then
+				term.setCursorPos(20,10)
+				term.setBackgroundColor(boxColor)
+				print("      ")
+				frameTime = frameTime + 0.01
+			elseif X >= 22 and X <= 29 and Y >= 12 and Y <= 14 then
+				local name,status = createAnim()
+				if status == true then
+					centerText("Successfully created!",15)
+					sleep(1)
+					help = false
+					main = true
+					play = false
+					create = false
+					drawGUI()
+					break
+				elseif status == false then
+					centerText("Unsuccessful.",15)
+					sleep(1)
+					help = false
+					main = true
+					play = false
+					create = false
+					drawGUI()
+					break
+				end
+			end
+		end
+	end
+end
+
+function drawPlay()
+	while true do
+		term.setBackgroundColor(boxColor)
+		term.setTextColor(textColor)
+		term.setCursorPos(6,6)
+		print("Name:")
+		term.setCursorPos(11,6)
+		term.setBackgroundColor(colors.gray)
+		print(playName)
+		term.setBackgroundColor(backColor)
+		centerText("      ",12)
+		centerText(" PLAY ",13)
+		centerText("      ",14)
+		term.setCursorPos(38,18)
+		term.setBackgroundColor(boxColor)
+		print(" BACK ")
+		local event,button,X,Y = os.pullEvent()
+		if event == "mouse_click" then
+			if X >= 38 and X <= 43 and Y == 18 then
+				help = false
+				main = true
+				play = false
+				create = false
+				drawGUI()
+				break
+			elseif X >= 11 and X <= 22 and Y == 6 then
+				term.setCursorPos(11,6)
+				term.setBackgroundColor(colors.gray)
+				term.setTextColor(tBarTextColor)
+				print("               ")
+				term.setCursorPos(11,6)
+				playName = read()
+			elseif X >= 23 and X <= 28 and Y >= 12 and Y <= 14 then
+				if fs.exists("/"..playName) then
+					local file = fs.open("/"..playName.."/"..playName..".cfg","r")
+					local fCount = file.readLine()
+					local fTime = file.readLine()
+					local fCount = tonumber(fCount)
+					local fTime = tonumber(fTime)
+					local loadingFrame = 1
+					for i=1,fCount do
+						term.setBackgroundColor(colors.black)
+						term.clear()
+						term.setCursorPos(1,1)
+						local frm = paintutils.loadImage("/"..playName.."/"..playName..loadingFrame)
+						paintutils.drawImage(frm,1,1)
+						sleep(fTime)
+						loadingFrame = loadingFrame + 1
+					end
+					term.setBackgroundColor(colors.black)
+					term.setTextColor(colors.white)
+					centerText("Complete. Returning...",15)
+					sleep(1)
+					help = false
+					main = true
+					play = false
+					create = false
+					drawGUI()
+					break
+				end
+			end
+		end
+	end
+end
+
+function drawGUI()
+	term.setBackgroundColor(backColor)
+	term.clear()
+	term.setBackgroundColor(tBarColor)
+	term.setTextColor(tBarTextColor)
+	term.setCursorPos(1,1)
+	term.clearLine()
+	term.setCursorPos(1,1)
+	print("  SavviAnimations  ")
+	term.setCursorPos(40,1)
+	print(" by AutoLocK")
+	drawBox(5,5,43,12,boxColor)
+	if main == true then
+		drawMain()
+	elseif play == true then
+		drawPlay()
+	elseif create == true then
+		drawCreate()
+	elseif help == true then
+		drawHelp()
+	end
+end
+
+function createAnim()
+	currentFrame = 1
+	if not fs.exists("/"..animName) then
+		fs.makeDir("/"..animName)
+		local file = fs.open("/"..animName.."/"..animName..".cfg","w")
+		file.writeLine(frameCount)
+		file.writeLine(frameTime)
+		file.close()
+		for i=1,frameCount do
+			shell.run("paint /"..animName.."/"..animName..currentFrame)
+			currentFrame = currentFrame + 1
+		end
+		return animName,true
+	else
+		return animName,false
+	end
+end
+
+function startup()
+	drawGUI()
+	while true do
+		local event,button,X,Y = os.pullEvent()
+		if event == "mouse_click" then
+			if X >= 45 and X <= 50 and Y == 18 then
+				term.setBackgroundColor(colors.black)
+				term.clear()
+				term.setCursorPos(1,1)
+				break
+			elseif X >= 38 and X <= 43 and Y == 18 then
+				help = true
+				main = false
+				play = false
+				create = false
+				drawGUI()
+			elseif X >= 16 and X <= 35 and Y >= 6 and Y <= 8 then
+				help = false
+				main = false
+				play = false
+				create = true
+				drawGUI()
+			elseif X >= 17 and X <= 34 and Y >= 10 and Y <= 12 then
+				help = false
+				main = false
+				play = true
+				create = false
+				drawGUI()
+			end
+		end
+	end
+end
+
+startup()

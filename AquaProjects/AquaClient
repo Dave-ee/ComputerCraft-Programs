@@ -1,0 +1,102 @@
+-- GUI Colors
+
+side = "back"
+doorSide = "right"
+tBarCol = colors.blue
+tBarTextCol = colors.white
+backColor = colors.white
+textColor = colors.blue
+
+serverID = 4
+
+rednet.open(side)
+os.pullEvent = os.pullEventRaw
+
+function titleBar()
+  term.setTextColor(tBarTextCol)
+  term.setBackgroundColor(tBarCol)
+  term.setCursorPos(1,1)
+  term.clearLine()
+  term.setCursorPos(1,1)
+  print("[AquaClient] - The Roaming Client")
+end
+
+function drawBox(x,y,w,h,color)
+  mY = y
+  term.setCursorPos(x,y)
+  term.setBackgroundColor(color)
+  for i=1,h do
+    term.setCursorPos(x,mY)
+    print(string.rep(" ",w))
+    mY = mY + 1
+  end
+end
+
+function drawMS()
+  term.setBackgroundColor(backColor)
+  term.clear()
+  drawBox(5,5,42,12,colors.lightBlue)
+  term.setCursorPos(6,6)
+  print("Password:")
+  term.setBackgroundColor(colors.gray)
+  term.setCursorPos(6,7)
+  print("                  ")
+  term.setBackgroundColor(colors.lightBlue)
+  term.setCursorPos(6,9)
+  print("1. Click on the gray space.")
+  term.setCursorPos(6,10)
+  print("2. Enter the password.")
+  term.setCursorPos(6,11)
+  print("3. Wait for a reply.")
+
+  titleBar()
+end
+
+drawMS()
+while true do
+	local event,button,X,Y = os.pullEvent()
+	if event == "mouse_click" then
+		if X >=6 and X <=24 and Y==7 and button ==1 then
+			term.setBackgroundColor(colors.gray)
+			term.setTextColor(colors.white)
+			term.setCursorPos(7,7)
+			passInput = read("*")
+			rednet.send(serverID,passInput)
+			local senderID,message,distance = rednet.receive(5)
+			if senderID == serverID then
+				if message == "CODE_ACCEPT" then
+					term.setTextColor(colors.green)
+					term.setBackgroundColor(colors.lightBlue)
+					term.setCursorPos(6,13)
+  					print("Server responded!")
+  					term.setCursorPos(6,14)
+  					print("Password accepted!")
+  					sleep(1)
+  					rs.setOutput(doorSide,true)
+  					sleep(3)
+  					os.shutdown()
+  				elseif message == "CODE_DECLINE" then
+  					term.setTextColor(colors.red)
+  					term.setBackgroundColor(colors.lightBlue)
+  					term.setCursorPos(6,13)
+  					print("Server responded!")
+  					term.setCursorPos(6,14)
+  					print("Password declined!")
+  					sleep(3)
+  					os.shutdown()
+  				end
+  			else
+  				term.setCursorPos(6,13)
+ 				term.setTextColor(colors.orange)
+ 				term.setBackgroundColor(colors.lightBlue)
+  				print("Server did not respond.")
+  				term.setCursorPos(6,14)
+  				print("Please notify your Server Admin.")
+  				sleep(3)
+  				os.shutdown()
+ 			end
+  		end
+  		drawMS()
+  	end
+  	drawMS()
+end
