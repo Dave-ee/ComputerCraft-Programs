@@ -9,7 +9,7 @@
   - This means another user can use it without knowing it has DUCCY on it
   - Also means you can select a textfield before you start it (some login screens you have to click on the textfield)
 
-### V3 (Unreleased)
+### V3
 - Automatically copies all files on the computer to a floppy drive (if there is one and you tell it to)
 - Options
   - Set key to start the injection (default: Left Shift)
