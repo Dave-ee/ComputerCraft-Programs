@@ -1,0 +1,104 @@
+--[[
+
+	Bass - Password Base
+	By Dave-ee Jones
+	
+	The password manager, allowing you to choose specific passwords to input into a program
+	
+--]]
+
+local bRunAtStartup = false -- Replaces startup file, acting as a Password Manager behind programs
+local fRun = "" -- Program to run above Bass
+local kPassKey = keys.leftShift -- Key to press to detect the password needed
+local bColor = colors.lightBlue -- Background colour of detected password
+local tColor = colors.gray -- Text colour of detected password
+-- Passwords to detect based on program path
+local tPasswords = {
+	["/bass"] = "example_password",
+}
+
+local bRunning = false
+
+if bRunAtStartup then
+	local prog = shell.getRunningProgram()
+	if prog == "startup" then
+		if fs.exists("/.bass") then
+			local file = fs.open("/.bass","r")
+			fs.delete(file.readLine())
+			file.close()
+			fs.delete("/.bass")
+			os.reboot()
+		end
+	else
+		if fs.exists("/startup") then
+			fs.move("/startup","/_startup")
+		end
+		local file = fs.open("/.bass","w")
+		file.writeLine("/"..prog)
+		file.close()
+		fs.copy("/"..prog,"/startup")
+		os.reboot()
+	end
+end
+
+local function inputPassword()
+	while bRunning do
+		local _t
+		local _b
+		if tPasswords["/"..shell.getRunningProgram()] then
+			for i=1, #tPasswords["/"..shell.getRunningProgram()] do
+				os.queueEvent("char",string.sub(tPasswords["/"..shell.getRunningProgram()],i,i))
+			end
+			os.queueEvent("key",keys.enter)
+		end
+		term.setBackgroundColor(bColor)
+		term.setTextColor(tColor)
+		bRunning = false
+	end
+end
+
+local function run()
+	if not bRunAtStartup or not fs.exists(fRun) then
+		while true do
+			term.setTextColor(colors.white)
+			term.setBackgroundColor(colors.black)
+			write("Password: ")
+			local input = read()
+			if input == "example_password" then
+				term.setTextColor(colors.green)
+				term.setBackgroundColor(colors.black)
+				print("Access Granted")
+				break
+			else
+				term.setTextColor(colors.red)
+				term.setBackgroundColor(colors.black)
+				print("Access Denied")
+			end
+		end
+	else
+		if bRunAtStartup and fs.exists("/_startup") then
+			shell.run("/_startup")
+		else
+			shell.run(fRun)
+		end
+	end
+end
+
+local co1 = coroutine.create(inputPassword)
+local co2 = coroutine.create(run)
+
+local e = {}
+while true do
+	if bRunning then
+		coroutine.resume(co1,unpack(e))
+	end
+	coroutine.resume(co2,unpack(e))
+	e = { os.pullEvent() }
+	if e[1] == "key" and e[2] == kPassKey then
+		bRunning = true
+	end
+	if coroutine.status(co2) == "dead" then
+		bRunning = false
+		break
+	end
+end
