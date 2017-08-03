@@ -10,11 +10,12 @@
 local bRunAtStartup = false -- Replaces startup file, acting as a Password Manager behind programs
 local fRun = "" -- Program to run above Bass
 local kPassKey = keys.leftShift -- Key to press to detect the password needed
-local bColor = colors.lightBlue -- Background colour of detected password
-local tColor = colors.gray -- Text colour of detected password
+local bHideInput = false -- Hides password input and stops cursor blinking (so people can't see how long password is)
 -- Passwords to detect based on program path
 local tPasswords = {
-	["/bass"] = "example_password",
+	["/test1"] = "bass",
+	["/test2"] = "password",
+	["/test3"] = "see? it's different"
 }
 
 local bRunning = false
@@ -43,44 +44,25 @@ end
 
 local function inputPassword()
 	while bRunning do
-		local _t
-		local _b
 		if tPasswords["/"..shell.getRunningProgram()] then
 			for i=1, #tPasswords["/"..shell.getRunningProgram()] do
 				os.queueEvent("char",string.sub(tPasswords["/"..shell.getRunningProgram()],i,i))
 			end
 			os.queueEvent("key",keys.enter)
 		end
-		term.setBackgroundColor(bColor)
-		term.setTextColor(tColor)
+		if bHideInput then
+			term.setCursorBlink(false)
+			term.setTextColor(term.getBackgroundColor())
+		end
 		bRunning = false
 	end
 end
 
 local function run()
-	if not bRunAtStartup or not fs.exists(fRun) then
-		while true do
-			term.setTextColor(colors.white)
-			term.setBackgroundColor(colors.black)
-			write("Password: ")
-			local input = read()
-			if input == "example_password" then
-				term.setTextColor(colors.green)
-				term.setBackgroundColor(colors.black)
-				print("Access Granted")
-				break
-			else
-				term.setTextColor(colors.red)
-				term.setBackgroundColor(colors.black)
-				print("Access Denied")
-			end
-		end
+	if bRunAtStartup and fs.exists("/_startup") then
+		shell.run("/_startup")
 	else
-		if bRunAtStartup and fs.exists("/_startup") then
-			shell.run("/_startup")
-		else
-			shell.run(fRun)
-		end
+		shell.run(fRun)
 	end
 end
 
