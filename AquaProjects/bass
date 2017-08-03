@@ -8,9 +8,10 @@
 --]]
 
 local bRunAtStartup = false -- Replaces startup file, acting as a Password Manager behind programs
-local fRun = "" -- Program to run above Bass
+local fRun = "test1" -- Program to run above Bass
 local kPassKey = keys.leftShift -- Key to press to detect the password needed
 local bHideInput = false -- Hides password input and stops cursor blinking (so people can't see how long password is)
+local bDiskAuth = false
 -- Passwords to detect based on program path
 local tPasswords = {
 	["/test1"] = "bass",
@@ -19,6 +20,9 @@ local tPasswords = {
 }
 
 local bRunning = false
+local bDisk = false
+local sDiskPass = ""
+local tColor
 
 if bRunAtStartup then
 	local prog = shell.getRunningProgram()
@@ -44,13 +48,19 @@ end
 
 local function inputPassword()
 	while bRunning do
-		if tPasswords["/"..shell.getRunningProgram()] then
+		if tPasswords["/"..shell.getRunningProgram()] and not bDisk then
 			for i=1, #tPasswords["/"..shell.getRunningProgram()] do
 				os.queueEvent("char",string.sub(tPasswords["/"..shell.getRunningProgram()],i,i))
 			end
 			os.queueEvent("key",keys.enter)
+		elseif bDisk and not sDiskPass == "" and bDiskAuth then
+			for i=1,#sDiskPass do
+				os.queueEvent("char",string.sub(sDiskPass,i,i))
+			end
+			os.queueEvent("key",keys.enter)
 		end
 		if bHideInput then
+			tColor = term.getTextColor()
 			term.setCursorBlink(false)
 			term.setTextColor(term.getBackgroundColor())
 		end
@@ -78,9 +88,20 @@ while true do
 	e = { os.pullEvent() }
 	if e[1] == "key" and e[2] == kPassKey then
 		bRunning = true
+	elseif e[1] == "disk" and bDiskAuth then
+		bDisk = true
+		if fs.exists("/disk/bass_password") then
+			local _df = fs.open("/disk/bass_password")
+			sDiskPass = _df.readAll()
+			_df.close()
+		end
+	elseif e[1] == "disk_eject" and bDiskAuth then
+		bDisk = false
+		sDiskPass = ""
 	end
 	if coroutine.status(co2) == "dead" then
 		bRunning = false
 		break
 	end
+	term.setTextColor(tColor)
 end
