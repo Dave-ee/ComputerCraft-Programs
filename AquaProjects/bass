@@ -22,7 +22,6 @@ local tPasswords = {
 local bRunning = false
 local bDisk = false
 local sDiskPass = ""
-local tColor
 
 if bRunAtStartup then
 	local prog = shell.getRunningProgram()
@@ -60,7 +59,6 @@ local function inputPassword()
 			os.queueEvent("key",keys.enter)
 		end
 		if bHideInput then
-			tColor = term.getTextColor()
 			term.setCursorBlink(false)
 			term.setTextColor(term.getBackgroundColor())
 		end
@@ -103,5 +101,4 @@ while true do
 		bRunning = false
 		break
 	end
-	term.setTextColor(tColor)
 end
