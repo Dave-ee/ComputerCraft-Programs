@@ -1,0 +1,69 @@
+local sPath = "/.idspoof"
+local tColor_g = colors.green
+local tColor_e = colors.red
+local tColor_i = colors.blue
+
+local tArgs = { ... }
+
+local function printUsage()
+	term.setTextColor(tColor_e)
+	print("Usage:")
+	print(shell.getRunningProgram().." spoof <id>")
+	print(shell.getRunningProgram().." reset")
+	error()
+end
+
+local function printInfo()
+	term.setTextColor(tColor_i)
+	print("Currently spoofing.")
+	print("Current ID: "..os.getComputerID())
+	local _f = fs.open(sPath,"r")
+	local _id = _f.readLine()
+	print("Old ID: ".._id)
+	_f.close()
+	error()
+end
+
+if #tArgs < 1 then
+	if fs.exists(sPath) then
+		printInfo()
+	else
+		printUsage()
+	end
+end
+
+if string.lower(tArgs[1]) == "spoof" then
+	if #tArgs >= 2 then
+		if not fs.exists(sPath) then
+			local _f = fs.open(sPath,"w")
+			local _id = os.getComputerID()
+			_f.write(tostring(_id))
+			function os.getComputerID()
+				return tArgs[2]
+			end
+			_f.close()
+			term.setTextColor(tColor_g)
+			print("Now spoofing as "..os.getComputerID()..".")
+		elseif fs.exists(sPath) then
+			printInfo()
+		end
+	else
+		printUsage()
+	end
+elseif string.lower(tArgs[1]) == "reset" then
+	if fs.exists(sPath) then
+		local _f = fs.open(sPath,"r")
+		local _id = tonumber(_f.readLine())
+		function os.getComputerID()
+			return tonumber(_id)
+		end
+		_f.close()
+		fs.delete(sPath)
+		term.setTextColor(tColor_g)
+		print("Stopped spoofing. ID is now "..os.getComputerID()..".")
+	else
+		printUsage()
+	end
+else
+	printUsage()
+end
