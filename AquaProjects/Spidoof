@@ -1,3 +1,12 @@
+--[[
+
+	Spidoof - ID spoofing
+	By Dave-ee Jones
+	
+	Spoof an ID of any computer with this easy-to-use tool
+	
+--]]
+
 local sPath = "/.idspoof"
 local tColor_g = colors.green
 local tColor_e = colors.red
