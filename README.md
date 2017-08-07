@@ -1,5 +1,6 @@
 # ComputerCraft Programs
-#### ComputerCraft programs I have created
+#### ComputerCraft programs I have created (and bothered to upload)
+#### NOTE: None of my OS' are uploaded here, so keep that in mind
 
 ### Floppy hacks
 - DUCCY
