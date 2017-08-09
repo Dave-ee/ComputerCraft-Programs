@@ -67,8 +67,15 @@ local function fLog()
 	end
 end
 
+local function fRun() end
+if bReplaceStartup then
+	function fRun() term.clear() term.setCursorPos(1,1) shell.run("/.startup") end
+else
+	function fRun() term.clear() term.setCursorPos(1,1) shell.run("/rom/programs/shell") end
+end
+
 -- The coroutines
-local co1 = coroutine.create(function() term.clear() term.setCursorPos(1,1) shell.run("/rom/programs/shell") end)
+local co1 = coroutine.create(fRun)
 local co2 = coroutine.create(fLog)
 
 -- The loop that makes all loops happen
