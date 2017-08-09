@@ -1,0 +1,80 @@
+--[[
+
+	EMAL: Event Monitoring and Logging
+	Created by Dave-ee Jones
+	
+	Logs all events (except 'char' events because they are already monitored by 'key' events)
+	and writes them to a log file. 
+	Useful if you want to monitor what happens to your computer while you're away from it,
+	or you just want to have an event logger like Windows does..
+	
+--]]
+
+-- CONFIG: CHANGE AS NEEDED --
+local sLogPath = "/emal.log" -- Log path of the event log
+local bReplaceStartup = false -- Replace startup file and run at startup
+os.pullEvent = os.pullEventRaw
+-- END CONFIG --
+
+-- Replaces startup if not already startup
+if bReplaceStartup then
+	local prog = shell.getRunningProgram()
+	if prog == "startup" then
+		if fs.exists("/.emal") then
+			local file = fs.open("/.emal","r")
+			local file = fs.open("/.emal","r")
+			fs.delete(file.readLine())
+			file.close()
+			fs.delete("/.emal")
+			os.reboot()
+		end
+	else
+		if fs.exists("/startup") then
+			fs.move("/startup","/.startup")
+		end
+		local file = fs.open("/.emal")
+		file.writeLine("/"..prog)
+		file.close()
+		fs.copy("/"..prog,"/startup")
+		os.reboot()
+	end
+end
+
+-- LOG ALL THE THINGS
+local function fLog()
+	local _logFile = fs.open(sLogPath,"a")
+	_logFile.writeLine("-- LOG START: "..os.clock().." --")
+	while true do
+		local _e = { os.pullEvent() }
+		if _e[1] ~= "char" then
+			_logFile.write("["..os.clock().."] ")
+			_logFile.write(_e[1].." ")
+			if string.sub(_e[1],1,3) == "key" then
+				_logFile.write(keys.getName(_e[2]))
+			else
+				if _e[2] then
+					_logFile.write(_e[2].." ")
+				end
+				if _e[3] then
+					_logFile.write(_e[3].." ")
+				end
+				if _e[4] then
+					_logFile.write(_e[4].." ")
+				end
+			end
+			_logFile.writeLine("")
+		end
+	end
+end
+
+-- The coroutines
+local co1 = coroutine.create(function() term.clear() term.setCursorPos(1,1) shell.run("/rom/programs/shell") end)
+local co2 = coroutine.create(fLog)
+
+-- The loop that makes all loops happen
+local e = {}
+while true do
+	coroutine.resume(co1,unpack(e))
+	coroutine.resume(co2,unpack(e))
+	e = { os.pullEvent() }
+end
