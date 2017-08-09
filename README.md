@@ -18,6 +18,8 @@
   - Program-based password injection, allowing for multiple passwords for multiple programs
 - DJShell
   - Security shell, allowing guest users to use the computer without griefing
+- EMAL
+  - Event Monitoring and Logging (logs events to a file)
 - SavviAnimation
   - Animation program, allowing you to create frame-by-frame animations and play them back
 - SkyShell
