@@ -1,22 +1,27 @@
 --[[
 
-	To do:
+	Created by Dave-ee Jones
 	
-		- Event Handling
-		- Client can view host (DONE)
-		- Change channels (DONE)
-		
+	Remotely control a computer's shell. Has some small features for more
+	capabilities and uses.
+	
+	CREDIT:
+	Bomb Bloke
+	KingofGamesYami
+	The Crazy Phoenix
+	Lupus590
+	
 --]]
 
 
--- PRE-RUN CONFIGURATION -- 
-local nChannelClient = 5317
-local nChannelHost = 5318
-local oModem = peripheral.wrap("top")
-local bViewOnly = false
-local bLiveHost = false
-local kStopKey = keys.leftCtrl
--- END PRE-RUN CONFIGURATION --
+-- CONFIG: CHANGE AS NEEDED -- 
+local nChannelClient = 5317 -- channel the clients speak on
+local nChannelHost = 5318 -- channel the host speaks on
+local oModem = peripheral.wrap("top") -- side of the modem
+local bViewOnly = false -- makes the host view only
+local bLiveHost = false -- in progress
+local kStopKey = keys.leftCtrl -- stops the client/host connection
+-- END CONFIG --
 
 local sMode = ""
 local bRunning = true
@@ -167,7 +172,3 @@ elseif sMode == "host" then
 		end
 	end
 end
-
-	
-
- 
