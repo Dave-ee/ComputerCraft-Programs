@@ -1,0 +1,173 @@
+--[[
+
+	To do:
+	
+		- Event Handling
+		- Client can view host (DONE)
+		- Change channels (DONE)
+		
+--]]
+
+
+-- PRE-RUN CONFIGURATION -- 
+local nChannelClient = 5317
+local nChannelHost = 5318
+local oModem = peripheral.wrap("top")
+local bViewOnly = false
+local bLiveHost = false
+local kStopKey = keys.leftCtrl
+-- END PRE-RUN CONFIGURATION --
+
+local sMode = ""
+local bRunning = true
+
+-- The HOW I DO DIS function
+local function printUsage()
+	printError("Usage:")
+	printError(shell.getRunningProgram().." host <VO> [channelHost] [channelClient]")
+	printError(shell.getRunningProgram().." join [channelHost] [channelClient]")
+	printError(shell.getRunningProgram().." help")
+	error()
+end
+
+-- The WHAT IS DIS function
+local function printHelp()
+	printError("Host: Host a session")
+	printError("Join: Join a session")
+	printError("Channel (Host): Channel that the host speaks on")
+	printError("Channel (Client): Channel that the client speaks on")
+	printError("View Only (VO): Clients cannot take control")
+	error()
+end
+
+-- Argument handling
+local tArgs = { ... }
+if #tArgs < 1 then
+	printUsage()
+else
+	-- Set to host
+	if tArgs[1] == "host" then
+		sMode = "host"
+		-- View Only mode?
+		if tArgs[2] then
+			if tArgs[2] == "true" then
+				bViewOnly = true
+			elseif tArgs[2] == "false" then
+				bViewOnly = false
+			else
+				printUsage()
+			end
+		end
+		-- Apply channels set via args (HOST)
+		if tArgs[3] then
+			nChannelHost = tonumber(tArgs[3])
+		end
+		if tArgs[4] then
+			nChannelClient = tonumber(tArgs[4])
+		end
+	-- Set to client
+	elseif tArgs[1] == "join" then
+		sMode = "client"
+		-- Apply channels set via args (JOIN)
+		if tArgs[2] then
+			nChannelHost = tonumber(tArgs[2])
+		end
+		if tArgs[3] then
+			nChannelClient = tonumber(tArgs[3])
+		end
+	-- Show help
+	elseif tArgs[1] == "help" then
+		printHelp()
+	end
+end
+
+-- Main
+if sMode == "client" then
+	oModem.open(nChannelHost) -- listen to host
+	term.clear()
+	term.setCursorPos(1,1)
+	printError("Disconnect by using "..keys.getName(kStopKey)..".")
+	while bRunning do
+		local event, side, channel, channelReply, message, distance = os.pullEvent()
+		if event == "modem_message" then
+			if channel == nChannelHost and channelReply == nChannelClient and message.p == "HSH_TERM_FUNCTION" then
+				term[message.n](unpack(message.a))
+			elseif channel == nChannelHost and channelReply == nChannelClient and message.p == "HSH_STOP" then
+				bRunning = false
+				term.clear()
+				term.setCursorPos(1,1)
+				printError("Host stopped the server.")
+				error()
+			end
+		elseif event == "key" and side == kStopKey then
+			bRunning = false
+			term.clear()
+			term.setCursorPos(1,1)
+			printError("Disconnected from host.")
+			error()
+		else
+			oModem.transmit(nChannelClient, nChannelHost, {p = "HSH_EVENT", e = { event, side, channel, channelReply, message, distance }})
+		end
+	end
+elseif sMode == "host" then
+	oModem.open(nChannelClient) -- listen to client/s
+	term.clear()
+	term.setCursorPos(1,1)
+	printError("Stop the server at any time by using "..keys.getName(kStopKey)..".")
+	local term_server = term.current()
+	local term_client = {}
+	for _name, _func in pairs(term_server) do
+		term_client[_name] = function(...)
+			oModem.transmit(nChannelHost, nChannelClient, {p = "HSH_TERM_FUNCTION", n = _name, a = {...}})
+			return _func(...)
+		end
+	end
+	term.redirect(term_client)
+	-- Run function
+	local function run()
+		shell.run("/rom/programs/shell")
+	end
+	-- Listen function
+	local function listen()
+		while bRunning do
+			local event, side, channel, channelReply, message, distance = os.pullEvent()
+			if event == "modem_message" and channel == nChannelClient and channelReply == nChannelHost and message.p == "HSH_EVENT" then
+				if not bViewOnly then
+					os.queueEvent(unpack(message.e))
+				end
+			elseif event == "key" and side == kStopKey then
+				bRunning = false
+			end
+		end
+	end
+	
+	-- Host Code
+	local cor1 = coroutine.create(run)
+	local cor2 = coroutine.create(listen)
+	local _e = {}
+	while true do
+		if bRunning then
+			coroutine.resume(cor2,unpack(_e))
+		end
+		coroutine.resume(cor1,unpack(_e))
+		_e = { os.pullEvent() }
+		if coroutine.status(cor1) == "dead" then
+			bRunning = false
+			term.clear()
+			term.setCursorPos(1,1)
+			printError("Server stopped running.")
+			error()
+		elseif coroutine.status(cor2) == "dead" then
+			bRunning = false
+			oModem.transmit(nChannelHost, nChannelClient, {p = "HSH_STOP"})
+			term.clear()
+			term.setCursorPos(1,1)
+			printError("Server has been stopped.")
+			error()
+		end
+	end
+end
+
+	
+
+ 
