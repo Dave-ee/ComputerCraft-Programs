@@ -11,12 +11,16 @@
 	The Crazy Phoenix
 	Lupus590
 	
+	TODO:
+	- Side menu (opens up when you press a button/click a pixel - gives info of session)
+	- Alias functions (call a string in the shell to do some special function, maybe)
+	
 --]]
 
 
 -- CONFIG: CHANGE AS NEEDED -- 
-local nChannelClient = 5317 -- channel the clients speak on
-local nChannelHost = 5318 -- channel the host speaks on
+local nChannelHost = 5317 -- channel the host speaks on
+local nChannelClient = 5318 -- channel the clients speak on
 local oModem = peripheral.wrap("top") -- side of the modem
 local bViewOnly = false -- makes the host view only
 local bLiveHost = false -- in progress
@@ -24,6 +28,8 @@ local kStopKey = keys.leftCtrl -- stops the client/host connection
 -- END CONFIG --
 
 local sMode = ""
+local nLengthHost = 0
+local nLengthClient = 0
 local bRunning = true
 
 -- The HOW I DO DIS function
@@ -158,15 +164,12 @@ elseif sMode == "host" then
 		_e = { os.pullEvent() }
 		if coroutine.status(cor1) == "dead" then
 			bRunning = false
-			term.clear()
-			term.setCursorPos(1,1)
+			oModem.transmit(nChannelHost, nChannelClient, {p = "HSH_STOP"})
 			printError("Server stopped running.")
 			error()
 		elseif coroutine.status(cor2) == "dead" then
 			bRunning = false
 			oModem.transmit(nChannelHost, nChannelClient, {p = "HSH_STOP"})
-			term.clear()
-			term.setCursorPos(1,1)
 			printError("Server has been stopped.")
 			error()
 		end
