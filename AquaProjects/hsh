@@ -94,7 +94,7 @@ if sMode == "client" then
 	oModem.open(nChannelHost) -- listen to host
 	term.clear()
 	term.setCursorPos(1,1)
-	printError("Disconnect by using "..keys.getName(kStopKey)..".")
+	printError("Disconnect by pressing the "..keys.getName(kStopKey).." key.")
 	while bRunning do
 		local event, side, channel, channelReply, message, distance = os.pullEvent()
 		if event == "modem_message" then
@@ -121,7 +121,7 @@ elseif sMode == "host" then
 	oModem.open(nChannelClient) -- listen to client/s
 	term.clear()
 	term.setCursorPos(1,1)
-	printError("Stop the server at any time by using "..keys.getName(kStopKey)..".")
+	printError("Stop hosting by pressing the "..keys.getName(kStopKey).." key.")
 	local term_server = term.current()
 	local term_client = {}
 	for _name, _func in pairs(term_server) do
