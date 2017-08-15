@@ -23,13 +23,10 @@ local nChannelHost = 5317 -- channel the host speaks on
 local nChannelClient = 5318 -- channel the clients speak on
 local oModem = peripheral.wrap("top") -- side of the modem
 local bViewOnly = false -- makes the host view only
-local bLiveHost = false -- in progress
 local kStopKey = keys.leftCtrl -- stops the client/host connection
 -- END CONFIG --
 
 local sMode = ""
-local nLengthHost = 0
-local nLengthClient = 0
 local bRunning = true
 
 -- The HOW I DO DIS function
