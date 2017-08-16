@@ -23,11 +23,20 @@ local nChannelHost = 5317 -- channel the host speaks on
 local nChannelClient = 5318 -- channel the clients speak on
 local oModem = peripheral.wrap("top") -- side of the modem
 local bViewOnly = false -- makes the host view only
-local kStopKey = keys.leftCtrl -- stops the client/host connection
+local kMenuKey = keys.leftCtrl -- opens menu
+local kStopKey = keys.leftCtrl -- closes connection
+
+local cMenu_bg = colors.lightBlue
+local cMenu_fg = colors.black
+local cMenu_fg2 = colors.gray
+local cMenu_bbg = colors.blue
+local cMenu_bfg = colors.black
+local cMenu_ebg = colors.red
 -- END CONFIG --
 
 local sMode = ""
 local bRunning = true
+local bMenuVisible = false
 
 -- The HOW I DO DIS function
 local function printUsage()
@@ -89,12 +98,39 @@ else
 	end
 end
 
+local function drawMenu()
+	term.setBackgroundColor(cMenu_bg)
+	term.setTextColor(cMenu_fg)
+	term.clear()
+	term.setCursorPos(4,2)
+	print("HSH Menu")
+	term.setCursorPos(2,17)
+	term.setBackgroundColor(cMenu_ebg)
+	term.setTextColor(cMenu_bfg)
+	print(" Disconnect ")
+	term.setCursorPos(2,5)
+	print("Host:")
+	term.setCursorPos(8,5)
+	term.setTextColor(cMenu_fg2)
+	print(nChannelHost)
+	term.setCursorPos(2,6)
+	term.setTextColor(cMenu_fg)
+	print("Client:")
+	term.setCursorPos(8,6)
+	term.setTextColor(cMenu_fg2)
+	print(tostring(nChannelClient))
+end
+
 -- Main
 if sMode == "client" then
+	local wOrig = term.current()
+	local wMain = window.create(term.current(),1,1,51,19,true)
+	local wMenu = window.create(wOrig,38,1,14,19,false)
+	term.redirect(wMain)
 	oModem.open(nChannelHost) -- listen to host
 	term.clear()
 	term.setCursorPos(1,1)
-	printError("Disconnect by pressing the "..keys.getName(kStopKey).." key.")
+	printError("Open menu by pressing the "..keys.getName(kMenuKey).." key.")
 	while bRunning do
 		local event, side, channel, channelReply, message, distance = os.pullEvent()
 		if event == "modem_message" then
@@ -105,16 +141,35 @@ if sMode == "client" then
 				term.clear()
 				term.setCursorPos(1,1)
 				printError("Host stopped the server.")
+				term.redirect(wOrig)
 				error()
 			end
-		elseif event == "key" and side == kStopKey then
-			bRunning = false
-			term.clear()
-			term.setCursorPos(1,1)
-			printError("Disconnected from host.")
-			error()
+		elseif event == "mouse_click" and bMenuVisible then
+			-- Clicked 'Disconnect' button
+			if side == 1 and channel >= 39 and channel <= 50 and channelReply == 17 then
+				bRunning = false
+				term.redirect(wOrig)
+				wMain.redraw()
+				term.setBackgroundColor(colors.black)
+				term.clear()
+				term.setCursorPos(1,1)
+				printError("Disconnected from host.")
+				error()
+			end
+		elseif event == "key" and side == kMenuKey then
+			bMenuVisible = not bMenuVisible
+			wMenu.setVisible(bMenuVisible)
+			if bMenuVisible then
+				term.redirect(wMenu)
+				drawMenu()
+			else
+				term.redirect(wMain)
+				wMain.redraw()
+			end
 		else
-			oModem.transmit(nChannelClient, nChannelHost, {p = "HSH_EVENT", e = { event, side, channel, channelReply, message, distance }})
+			if not bMenuVisible then
+				oModem.transmit(nChannelClient, nChannelHost, {p = "HSH_EVENT", e = { event, side, channel, channelReply, message, distance }})
+			end
 		end
 	end
 elseif sMode == "host" then
