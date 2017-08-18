@@ -12,8 +12,8 @@
 	Lupus590
 	
 	TODO:
-	- Side menu (opens up when you press a button/click a pixel - gives info of session)
-	- Alias functions (call a string in the shell to do some special function, maybe)
+	- Side menu for HOST
+	- Re-write for neater flow
 	
 --]]
 
@@ -27,8 +27,9 @@ local kMenuKey = keys.leftCtrl -- opens menu
 local kStopKey = keys.leftCtrl -- closes connection
 
 local cMenu_bg = colors.lightBlue
+local cMenu_bg2 = colors.gray
 local cMenu_fg = colors.black
-local cMenu_fg2 = colors.gray
+local cMenu_fg2 = colors.lightGray
 local cMenu_bbg = colors.blue
 local cMenu_bfg = colors.black
 local cMenu_ebg = colors.red
@@ -41,7 +42,7 @@ local bMenuVisible = false
 -- The HOW I DO DIS function
 local function printUsage()
 	printError("Usage:")
-	printError(shell.getRunningProgram().." host <VO> [channelHost] [channelClient]")
+	printError(shell.getRunningProgram().." host [VO] [channelHost] [channelClient]")
 	printError(shell.getRunningProgram().." join [channelHost] [channelClient]")
 	printError(shell.getRunningProgram().." help")
 	error()
@@ -119,10 +120,10 @@ local function drawMenu()
 	print("Channel (C):")
 	term.setCursorPos(3,8)
 	term.setTextColor(cMenu_fg2)
-	print(tostring(nChannelClient))
+	print(nChannelClient)
 end
 
--- Main
+-- Main (CLIENT)
 if sMode == "client" then
 	local wOrig = term.current()
 	local wMain = window.create(term.current(),1,1,51,19,true)
@@ -156,6 +157,32 @@ if sMode == "client" then
 				term.setCursorPos(1,1)
 				printError("Disconnected from host.")
 				error()
+			-- Clicked the host channel
+			elseif side == 1 and channel >= 40 and channel <= 50 and channelReply == 6 then
+				term.setCursorPos(3,6)
+				term.setBackgroundColor(cMenu_bg2)
+				term.setTextColor(cMenu_fg2)
+				print("          ")
+				term.setCursorPos(3,6)
+				local _cH = read()
+				if tonumber(_cH) then
+					oModem.close(nChannelHost) -- close old host channel
+					nChannelHost = tonumber(_cH)
+					oModem.open(nChannelHost) -- listen to new host channel
+				end
+				drawMenu()
+			-- Clicked the client channel
+			elseif side == 1 and channel >= 40 and channel <= 50 and channelReply == 8 then
+				term.setCursorPos(3,8)
+				term.setBackgroundColor(cMenu_bg2)
+				term.setTextColor(cMenu_fg2)
+				print("          ")
+				term.setCursorPos(3,8)
+				local _cC = read()
+				if tonumber(_cC) then
+					nChannelClient = tonumber(_cC)
+				end
+				drawMenu()
 			end
 		elseif event == "key" and side == kMenuKey then
 			bMenuVisible = not bMenuVisible
@@ -173,6 +200,7 @@ if sMode == "client" then
 			end
 		end
 	end
+-- Main (HOST)
 elseif sMode == "host" then
 	oModem.open(nChannelClient) -- listen to client/s
 	term.clear()
