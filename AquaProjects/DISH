@@ -35,11 +35,13 @@ local c_MENU_IFG = colors.gray -- DEFAULT COLOUR | input text
 local c_MENU_BBG = colors.blue -- DEFAULT COLOUR | button background
 local c_MENU_BFG = colors.black -- DEFAULT COLOUR | button text
 local c_MENU_EBG = colors.red -- DEFAULT COLOUR | disconnect background
-local c_MENU_EFG = colors.black -- DEFAULT COLOUR | disconnect text
+local c_MENU_EFG = colors.white -- DEFAULT COLOUR | disconnect text
+local c_MENU_MBG_ON = colors.lime -- DEFAULT COLOUR | cp button background (on)
+local c_MENU_MBG_OFF = colors.red -- DEFAULT COLOUR | cp button background (off)
 
 -- END CONFIGURATION --
 
-local n_VERSION = 1.0
+local n_VERSION = 1.1
 local s_MODE = ""
 local b_RUNNING = true
 local b_MENU_VISIBLE = false
@@ -107,11 +109,11 @@ local function f_MENU_DRAW()
 	term.clear()
 	term.setCursorPos(4,2)
 	print("DISH Menu")
-	term.setCursorPos(2,4)
-	print("Mode: ")
-	term.setTextColor(c_MENU_IFG)
-	term.setCursorPos(8,4)
-	print(string.upper(s_MODE))
+	 term.setCursorPos(2,4)
+    print("Mode: ")
+    term.setTextColor(c_MENU_IFG)
+    term.setCursorPos(8,4)
+    print(string.upper(s_MODE))
 	term.setTextColor(c_MENU_FG)
 	term.setCursorPos(2,6)
 	print("Channel (H):")
@@ -127,16 +129,39 @@ local function f_MENU_DRAW()
 	print("             ")
 	term.setCursorPos(2,9)
 	print(ch_CLIENT)
+	if s_MODE == "host" then
+		term.setBackgroundColor(c_MENU_IBG)
+		for i=1,4 do
+			term.setCursorPos(2,10+i)
+			print("             ")
+		end
+		term.setTextColor(c_MENU_FG)
+		term.setCursorPos(2,11)
+		print("Control Panel")
+		term.setCursorPos(3,12)
+		if b_VIEWONLY then
+			term.setBackgroundColor(c_MENU_MBG_ON)
+			term.setTextColor(c_MENU_FG)
+		else
+			term.setBackgroundColor(c_MENU_MBG_OFF)
+			term.setTextColor(c_MENU_FG)
+		end
+		print(" View-Only ")
+	end
 	term.setBackgroundColor(c_MENU_EBG)
 	term.setTextColor(c_MENU_EFG)
+	term.setCursorPos(2,16)
+	print("             ")
 	term.setCursorPos(2,17)
-	print(" Disconnect ")
+	print("  Exit DISH  ")
+	term.setCursorPos(2,18)
+	print("             ")
 end
 
 local function f_HOST()
 	term.clear()
 	term.setCursorPos(1,1)
-	printError("DJSH - Host")
+	printError("DISH - Host")
 	printError("Press "..keys.getName(k_MENU).." to open menu.")
 	local w_HOST = term.current()
 	local w_CLIENT = {}
@@ -154,8 +179,10 @@ local function f_HOST()
 		while b_RUNNING do
 			local _e,_s,_c,_cR,_m,_d = os.pullEvent()
 			if _e == "modem_message" and _c == ch_CLIENT and _cR == ch_HOST and _m.p == "DISH_EVENT" then
-				if not b_VIEWONLY or not b_MENU_VISIBLE then
-					os.queueEvent(unpack(_m.e))
+				if not b_VIEWONLY then
+					if not b_MENU_VISIBLE then
+						os.queueEvent(unpack(_m.e))
+					end
 				end
 			elseif _e == "key" and _s == k_MENU then
 				local _b = not b_MENU_VISIBLE
@@ -170,11 +197,15 @@ local function f_HOST()
 				b_MENU_VISIBLE = not b_MENU_VISIBLE
 			elseif _e == "mouse_click" and b_MENU_VISIBLE then
 				-- Disconnect
-				if _s == 1 and _c >= 39 and _c <= 50 and _cR == 17 then
+				if _s == 1 and _c >= 38 and _c <= 50 and _cR >= 16 and _cR <= 18 then
 					b_RUNNING = false
 					term.redirect(w_ORIG)
 					w_CLIENT.redraw()
 					error()
+				-- View-Only toggle
+				elseif _s == 1 and _c >= 39 and _c <= 49 and _cR == 12 then
+					b_VIEWONLY = not b_VIEWONLY
+					f_MENU_DRAW()
 				-- Host Channel
 				elseif _s == 1 and _c >= 38 and _c <= 50 and _cR == 7 then
 					term.setCursorPos(2,7)
@@ -237,7 +268,7 @@ end
 local function f_CLIENT()
 	term.clear()
 	term.setCursorPos(1,1)
-	printError("DJSH - Client")
+	printError("DISH - Client")
 	printError("Press "..keys.getName(k_MENU).." to open menu.")
 	while b_RUNNING do
 		local _e,_s,_c,_cR,_m,_d = os.pullEvent()
@@ -268,7 +299,7 @@ local function f_CLIENT()
 			b_MENU_VISIBLE = not b_MENU_VISIBLE
 		elseif _e == "mouse_click" and b_MENU_VISIBLE then
 			-- Disconnect
-			if _s == 1 and _c >= 39 and _c <= 50 and _cR == 17 then
+			if _s == 1 and _c >= 38 and _c <= 50 and _cR >= 16 and _cR <= 18 then
 				b_RUNNING = false
 				term.redirect(w_ORIG)
 				w_MAIN.redraw()
