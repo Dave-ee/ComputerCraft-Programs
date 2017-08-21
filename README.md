@@ -16,12 +16,14 @@
 - Bass
   - Password manager that injects passwords straight into a program so you don't have to
   - Program-based password injection, allowing for multiple passwords for multiple programs
+- DISH
+  - Interactive remote shell, includes a side-menu, view-only and infinite clients
 - DJShell
   - Security shell, allowing guest users to use the computer without griefing
 - EMAL
   - Event Monitoring and Logging (logs events to a file)
 - HSH
-  - Remotely control shells with extra options like view-only and an emergency stop key
+  - [Experimental] Remotely control shells with extra options like view-only and an emergency stop key
 - SavviAnimation
   - Animation program, allowing you to create frame-by-frame animations and play them back
 - SkyShell
