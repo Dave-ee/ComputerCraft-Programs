@@ -1,0 +1,325 @@
+--[[ 
+
+	DISH
+	Created by Dave-ee Jones
+	
+	Remotely control a computer.
+	
+	CREDIT:
+	Bomb Bloke
+	KingofGamesYami
+	The Crazy Phoenix
+	Lupus500
+	
+	Variable Key:
+	ch = INTEGER, channel
+	p = PERIPHERAL
+	s = STRING
+	b = BOOLEAN
+	k = KEY
+	c = COLOUR
+
+--]]
+
+-- CONFIGURATION --
+
+local ch_HOST = 5317 -- DEFAULT CHANNEL | channel host speaks on
+local ch_CLIENT = 5318 -- DEFAULT CHANNEL | channel clients speak on
+local p_MODEM = peripheral.wrap("top")
+local b_VIEWONLY = false -- DEFAULT MODE | makes host ignore clients
+local k_MENU = keys.leftCtrl -- DEFAULT KEY | opens the menu
+local c_MENU_BG = colors.lightBlue -- DEFAULT COLOUR | menu background
+local c_MENU_FG = colors.black -- DEFAULT COLOUR | menu text
+local c_MENU_IBG = colors.lightGray -- DEFAULT COLOUR | input background
+local c_MENU_IFG = colors.gray -- DEFAULT COLOUR | input text
+local c_MENU_BBG = colors.blue -- DEFAULT COLOUR | button background
+local c_MENU_BFG = colors.black -- DEFAULT COLOUR | button text
+local c_MENU_EBG = colors.red -- DEFAULT COLOUR | disconnect background
+local c_MENU_EFG = colors.black -- DEFAULT COLOUR | disconnect text
+
+-- END CONFIGURATION --
+
+local n_VERSION = 0.7
+local s_MODE = ""
+local b_RUNNING = true
+local b_MENU_VISIBLE = false
+
+-- Usage
+local function f_USAGE()
+	printError("Usage:")
+	printError(shell.getRunningProgram().." host [vo] [HostCh] [ClientCh]")
+	printError(shell.getRunningProgram().." join [HostCh] [ClientCh]")
+	printError(shell.getRunningProgram().." help")
+	error()
+end
+
+-- Help
+local function f_HELP()
+	printError("---------")
+	printError("DISH v"..n_VERSION)
+	printError("---------")
+	printError("View Only: Clients cannot control host")
+	printError("HostCh: Channel the host speaks on")
+	printError("ClientCh: Channel the clients speak on")
+	error()
+end
+
+-- Argument handling
+local t_ARGS = { ... }
+if #t_ARGS < 1 then
+	f_USAGE()
+else
+	if t_ARGS[1] == "help" then
+		f_HELP()
+	elseif t_ARGS[1] == "host" then
+		s_MODE = "host"
+		if t_ARGS[2] then
+			if t_ARGS[2] == "true" or t_ARGS[2] == "t" then
+				b_VIEWONLY = true
+			elseif t_ARGS[2] == "false" or t_ARGS[2] == "f" then
+				b_VIEWONLY = false
+			else
+				f_USAGE()
+			end
+			if t_ARGS[3] then
+				ch_HOST = tonumber(t_ARGS[3])
+			end
+			if t_ARGS[4] then
+				ch_CLIENT = tonumber(t_ARGS[4])
+			end
+		end
+	elseif t_ARGS[1] == "join" then
+		s_MODE = "client"
+		if t_ARGS[2] then
+			ch_HOST = tonumber(t_ARGS[2])
+		end
+		if t_ARGS[3] then
+			ch_CLIENT = tonumber(t_ARGS[3])
+		end
+	else
+		f_USAGE()
+	end
+end
+
+local function f_MENU_DRAW()
+	term.setBackgroundColor(c_MENU_BG)
+	term.setTextColor(c_MENU_FG)
+	term.clear()
+	term.setCursorPos(4,2)
+	print("DISH Menu")
+	term.setCursorPos(2,4)
+	print("Mode: ")
+	term.setTextColor(c_MENU_IFG)
+	term.setCursorPos(8,4)
+	print(string.upper(s_MODE))
+	term.setTextColor(c_MENU_FG)
+	term.setCursorPos(2,6)
+	print("Channel (H):")
+	term.setCursorPos(2,8)
+	print("Channel (C):")
+	term.setBackgroundColor(c_MENU_IBG)
+	term.setTextColor(c_MENU_IFG)
+	term.setCursorPos(2,7)
+	print("             ")
+	term.setCursorPos(2,7)
+	print(ch_HOST)
+	term.setCursorPos(2,9)
+	print("             ")
+	term.setCursorPos(2,9)
+	print(ch_CLIENT)
+	term.setBackgroundColor(c_MENU_EBG)
+	term.setTextColor(c_MENU_EFG)
+	term.setCursorPos(2,17)
+	print(" Disconnect ")
+end
+
+local function f_HOST()
+	term.clear()
+	term.setCursorPos(1,1)
+	printError("DJSH - Host")
+	printError("Press "..keys.getName(k_MENU).." to open menu.")
+	local w_HOST = term.current()
+	local w_CLIENT = {}
+	for _n,_f in pairs(w_HOST) do
+		w_CLIENT[_n] = function(...)
+			p_MODEM.transmit(ch_HOST,ch_CLIENT,{p = "DISH_TMF", n = _n, a = {...}})
+			return _f(...)
+		end
+	end
+	term.redirect(w_CLIENT)
+	local function f_HOST_RUN()
+		shell.run("/rom/programs/shell")
+	end
+	local function f_HOST_LISTEN()
+		while b_RUNNING do
+			local _e,_s,_c,_cR,_m,_d = os.pullEvent()
+			if _e == "modem_message" and _c == ch_CLIENT and _cR == ch_HOST and _m.p == "DISH_EVENT" then
+				if not b_VIEWONLY or not b_MENU_VISIBLE then
+					os.queueEvent(unpack(_m.e))
+				end
+			elseif _e == "key" and _s == k_MENU then
+				local _b = not b_MENU_VISIBLE
+				w_MENU.setVisible(_b)
+				if _b then
+					term.redirect(w_MENU)
+					f_MENU_DRAW()
+				else
+					term.redirect(w_CLIENT)
+					w_CLIENT.redraw()
+				end
+				b_MENU_VISIBLE = not b_MENU_VISIBLE
+			elseif _e == "mouse_click" and b_MENU_VISIBLE then
+				-- Disconnect
+				if _s == 1 and _c >= 39 and _c <= 50 and _cR == 17 then
+					b_RUNNING = false
+					term.redirect(w_ORIG)
+					w_CLIENT.redraw()
+					error()
+				-- Host Channel
+				elseif _s == 1 and _c >= 38 and _c <= 50 and _cR == 7 then
+					term.setCursorPos(2,7)
+					term.setBackgroundColor(c_MENU_IBG)
+					term.setTextColor(c_MENU_IFG)
+					print("             ")
+					term.setCursorPos(2,7)
+					local _cH = read()
+					if tonumber(_cH) then
+						ch_HOST = tonumber(_cH)
+					end
+					f_MENU_DRAW()
+				-- Client Channel
+				elseif _s == 1 and _c >= 38 and _c <= 50 and _cR == 9 then
+					term.setCursorPos(2,9)
+					term.setBackgroundColor(c_MENU_IBG)
+					term.setTextColor(c_MENU_IFG)
+					print("             ")
+					term.setCursorPos(2,9)
+					local _cC = read()
+					if tonumber(_cC) then
+						p_MODEM.close(ch_CLIENT)
+						ch_CLIENT = tonumber(_cC)
+						p_MODEM.open(ch_CLIENT)
+					end
+					f_MENU_DRAW()
+				end
+			end
+		end
+	end
+	local c_RUN = coroutine.create(f_HOST_RUN)
+	local c_LISTEN = coroutine.create(f_HOST_LISTEN)
+	local t_EVENT = {}
+	while true do
+		if not b_MENU_VISIBLE then
+			coroutine.resume(c_RUN,unpack(t_EVENT))
+		end
+		coroutine.resume(c_LISTEN,unpack(t_EVENT))
+		t_EVENT = { os.pullEvent() }
+		if coroutine.status(c_RUN) == "dead" then
+			b_RUNNING = false
+			p_MODEM.transmit(ch_HOST,ch_CLIENT,{p = "DISH_STOP"})
+			term.setBackgroundColor(colors.black)
+			term.clear()
+			term.setCursorPos(1,1)
+			printError("Server stopped running.")
+			error()
+		elseif coroutine.status(c_LISTEN) == "dead" then
+			b_RUNNING = false
+			p_MODEM.transmit(ch_HOST,ch_CLIENT,{p = "DISH_STOP"})
+			term.setBackgroundColor(colors.black)
+			term.clear()
+			term.setCursorPos(1,1)
+			printError("Server has been stopped.")
+			error()
+		end
+	end
+end
+
+local function f_CLIENT()
+	term.clear()
+	term.setCursorPos(1,1)
+	printError("DJSH - Client")
+	printError("Press "..keys.getName(k_MENU).." to open menu.")
+	while b_RUNNING do
+		local _e,_s,_c,_cR,_m,_d = os.pullEvent()
+		if _e == "modem_message" then
+			if _c == ch_HOST and _cR == ch_CLIENT and _m.p == "DISH_TMF" then
+				if term[_m.n] then
+					term[_m.n](unpack(_m.a))
+				end
+			elseif _c == ch_HOST and _cR == ch_CLIENT and _m.p == "DISH_STOP" then
+				b_RUNNING = false
+				term.setBackgroundColor(colors.black)
+				term.clear()
+				term.setCursorPos(1,1)
+				printError("Host stopped the server.")
+				term.redirect(w_ORIG)
+				error()
+			end
+		elseif _e == "key" and _s == k_MENU then
+			local _b = not b_MENU_VISIBLE
+			w_MENU.setVisible(_b)
+			if _b then
+				term.redirect(w_MENU)
+				f_MENU_DRAW()
+			else
+				term.redirect(w_MAIN)
+				w_MAIN.redraw()
+			end
+			b_MENU_VISIBLE = not b_MENU_VISIBLE
+		elseif _e == "mouse_click" and b_MENU_VISIBLE then
+			-- Disconnect
+			if _s == 1 and _c >= 39 and _c <= 50 and _cR == 17 then
+				b_RUNNING = false
+				term.redirect(w_ORIG)
+				w_MAIN.redraw()
+				term.setBackgroundColor(colors.black)
+				term.clear()
+				term.setCursorPos(1,1)
+				printError("Disconnected from server.")
+				error()
+			-- Host Channel
+			elseif _s == 1 and _c >= 38 and _c <= 50 and _cR == 7 then
+				term.setCursorPos(2,7)
+				term.setBackgroundColor(c_MENU_IBG)
+				term.setTextColor(c_MENU_IFG)
+				print("             ")
+				term.setCursorPos(2,7)
+				local _cH = read()
+				if tonumber(_cH) then
+					p_MODEM.close(ch_HOST)
+					ch_HOST = tonumber(_cH)
+					p_MODEM.open(ch_HOST)
+				end
+				f_MENU_DRAW()
+			-- Client Channel
+			elseif _s == 1 and _c >= 38 and _c <= 50 and _cR == 9 then
+				term.setCursorPos(2,9)
+				term.setBackgroundColor(c_MENU_IBG)
+				term.setTextColor(c_MENU_IFG)
+				print("             ")
+				term.setCursorPos(2,9)
+				local _cC = read()
+				if tonumber(_cC) then
+					ch_CLIENT = tonumber(_cC)
+				end
+				f_MENU_DRAW()
+			end
+		else
+			if not b_MENU_VISIBLE then
+				p_MODEM.transmit(ch_CLIENT,ch_HOST,{p = "DISH_EVENT",e = { _e,_s,_c,_cR,_m,_d }})
+			end
+		end
+	end
+end
+
+w_ORIG = term.current()
+w_MAIN = window.create(w_ORIG,1,1,51,19,true)
+w_MENU = window.create(w_ORIG,37,1,15,19,false)
+term.redirect(w_MAIN)
+if s_MODE == "client" then
+	p_MODEM.open(ch_HOST)
+	f_CLIENT()
+elseif s_MODE == "host" then
+	p_MODEM.open(ch_CLIENT)
+	f_HOST()
+end
