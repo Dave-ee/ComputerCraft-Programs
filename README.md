@@ -23,7 +23,8 @@
 - EMAL
   - Event Monitoring and Logging (logs events to a file)
 - HSH
-  - [Experimental] Remotely control shells with extra options like view-only and an emergency stop key
+  - Remotely control shells with extra options like view-only and an emergency stop key
+  - EXPERIMENTAL, replaced by DISH
 - SavviAnimation
   - Animation program, allowing you to create frame-by-frame animations and play them back
 - SkyShell
