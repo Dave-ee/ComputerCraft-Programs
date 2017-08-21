@@ -39,7 +39,7 @@ local c_MENU_EFG = colors.black -- DEFAULT COLOUR | disconnect text
 
 -- END CONFIGURATION --
 
-local n_VERSION = 0.7
+local n_VERSION = 1.0
 local s_MODE = ""
 local b_RUNNING = true
 local b_MENU_VISIBLE = false
