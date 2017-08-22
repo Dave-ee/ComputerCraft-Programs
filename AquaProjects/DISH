@@ -25,7 +25,7 @@
 
 local ch_HOST = 5317 -- DEFAULT CHANNEL | channel host speaks on
 local ch_CLIENT = 5318 -- DEFAULT CHANNEL | channel clients speak on
-local p_MODEM = peripheral.wrap("top")
+local p_MODEM = peripheral.wrap("top") -- DEFAULT SIDE | do I really need to explain this..?
 local b_VIEWONLY = false -- DEFAULT MODE | makes host ignore clients
 local k_MENU = keys.leftCtrl -- DEFAULT KEY | opens the menu
 local c_MENU_BG = colors.lightBlue -- DEFAULT COLOUR | menu background
@@ -181,7 +181,9 @@ local function f_HOST()
 			if _e == "modem_message" and _c == ch_CLIENT and _cR == ch_HOST and _m.p == "DISH_EVENT" then
 				if not b_VIEWONLY then
 					if not b_MENU_VISIBLE then
-						os.queueEvent(unpack(_m.e))
+						if not _m.e[1] == "key" and _m.e[2] == k_MENU then
+							os.queueEvent(unpack(_m.e))
+						end
 					end
 				end
 			elseif _e == "key" and _s == k_MENU then
@@ -274,7 +276,7 @@ local function f_CLIENT()
 		local _e,_s,_c,_cR,_m,_d = os.pullEvent()
 		if _e == "modem_message" then
 			if _c == ch_HOST and _cR == ch_CLIENT and _m.p == "DISH_TMF" then
-				if term[_m.n] then
+				if term[_m.n] and not b_MENU_VISIBLE then
 					term[_m.n](unpack(_m.a))
 				end
 			elseif _c == ch_HOST and _cR == ch_CLIENT and _m.p == "DISH_STOP" then
