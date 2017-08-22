@@ -41,7 +41,7 @@ local c_MENU_MBG_OFF = colors.red -- DEFAULT COLOUR | cp button background (off)
 
 -- END CONFIGURATION --
 
-local n_VERSION = 1.1
+local n_VERSION = 1.2
 local s_MODE = ""
 local b_RUNNING = true
 local b_MENU_VISIBLE = false
