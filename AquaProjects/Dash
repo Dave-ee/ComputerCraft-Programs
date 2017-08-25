@@ -392,12 +392,16 @@ while b_RUNNING do
 				end
 			end
 		end
-		if n_RPM <= 10 and not b_CLUTCHIN and b_GEAR ~= "n" then
-			b_STALLED = true -- Oh dear, we've stalled
+		if n_RPM <= 10 and not b_CLUTCHIN then
+			if n_GEAR ~= "n" then
+				b_STALLED = true -- Oh dear, we've stalled
+			end
 		elseif n_RPM <= 500 then
-			if not b_CLUTCHIN and n_GEAR ~= "n" then
-				if n_GEAR == "r" or n_GEAR >= 3 then
-					b_STALLED = true -- Oh dear, we've stalled
+			if not b_CLUTCHIN then
+				if n_GEAR ~= "n" then
+					if n_GEAR == "r" or n_GEAR >= 3 then
+						b_STALLED = true -- Oh dear, we've stalled
+					end
 				end
 			end
 		end
