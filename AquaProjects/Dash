@@ -26,22 +26,50 @@ local k_GEAR_R = keys.m -- Reverse gear
 -- You can change these, but don't change the current RPMs 
 local n_RPM = 0 -- Current RPM
 local n_RPM_MAX = 7000 -- Max RPM (way past redline..)
-local n_RPM_UPRATE = 100 -- Rate your RPMs rise while accelerating (base)
-local n_RPM_DOWNRATE_IDLING = 90 -- Rate your RPMs drop while idle (base)
-local n_RPM_DOWNRATE_BRAKING = 110 -- Rate your RPMs drop while braking (base)
+local n_RPM_UPRATE = 80 -- Rate your RPMs rise while accelerating (base)
+local n_RPM_DOWNRATE_IDLING = 60 -- Rate your RPMs drop while idle (base)
+local n_RPM_DOWNRATE_BRAKING = 80 -- Rate your RPMs drop while braking (base)
+local n_SPEED = 0 -- Current speed
 local n_GEAR = "n" -- Current gear
+
+local n_TYRE_DIAMETER = 24 -- Diameter of the tyres, needed to calculate speed
 
 local n_TIMER_INTERVAL = 0.01 -- Time til next update
 
+-- Gear ratios
 local t_GRATIOS = {
-	3.00, -- 1st gear
-	2.10, -- 2nd gear
-	1.40, -- 3rd gear
-	1.00, -- 4th gear
-	0.85, -- 5th gear
-	0.55, -- 6th gear
+	3.60, -- 1st gear
+	2.20, -- 2nd gear
+	1.50, -- 3rd gear
+	1.20, -- 4th gear
+	1.00, -- 5th gear
+	0.75, -- 6th gear
 	["n"] = 1.00, -- Neutral (1.00 so that RPMs aren't affected by it)
-	["r"] = 2.8 -- Reverse
+	["r"] = -2.8 -- Reverse
+}
+
+-- Gear max speeds
+local t_GSPEEDS_MAX = {
+	35, -- 1st gear
+	70, -- 2nd gear
+	120, -- 3rd gear
+	110, -- 4th gear
+	130, -- 5th gear
+	140, -- 6th gear
+	["n"] = 1000, -- Neutral (1000 so it doesn't interfere)
+	["r"] = -50 -- Reverse (Yea, you can get quite fast in reverse..)
+}
+
+-- Gear min speeds
+local t_GSPEEDS_MIN = {
+	3, -- 1st gear
+	10, -- 2nd gear
+	25, -- 3rd gear
+	35, -- 4th gear
+	40, -- 5th gear
+	45, -- 6th gear
+	["n"] = -1, -- Neutral (1000 so it doesn't interfere)
+	["r"] = -3 -- Reverse (Yea, you can get quite fast in reverse..)
 }
 
 local w, h = term.getSize()
@@ -246,24 +274,39 @@ local function drawGUI()
 		print("      ")
 		term.setCursorPos(9,11+i)
 	end
-	if n_RPM >= 10 and n_RPM <= 99 then
-		term.setCursorPos(11,12)
-	elseif n_RPM >= 100 then
+	term.setCursorPos(12,12)
+	if n_RPM >= 100 then
 		term.setCursorPos(10,12)
 	end
-	if n_RPM > 9 then
-		print(tostring(n_RPM))
-	end
+	print(tostring(n_RPM))
 	term.setTextColor(colors.lightGray)
 	term.setCursorPos(10,13)
 	print("REVS")
+	
+	-- Draw RPM
+	term.setTextColor(colors.gray)
+	term.setBackgroundColor(colors.white)
+	term.setCursorPos(17,11)
+	for i=1,4 do
+		print("     ")
+		term.setCursorPos(17,11+i)
+	end
+	if n_SPEED >= 0 and n_SPEED <= 99 then
+		term.setCursorPos(19,12)
+	elseif n_SPEED >= 100 then
+		term.setCursorPos(18,12)
+	end
+	print(tostring(n_SPEED))
+	term.setTextColor(colors.lightGray)
+	term.setCursorPos(18,13)
+	print("MPH")
 	
 	-- Draw ignition
 	term.setCursorPos(30,11)
 	term.setTextColor(colors.lightGray)
 	if not b_STALLED then
 		term.setBackgroundColor(colors.green)
-		print(" - ")
+		print(" | ")
 	elseif b_STALLED and b_STARTING then
 		term.setBackgroundColor(colors.yellow)
 		print(" / ")
@@ -407,6 +450,23 @@ while b_RUNNING do
 		end
 		if b_STALLED then
 			n_RPM = 0
+			n_SPEED = 0
+		else
+			-- Calculate the speed (theoretical)!
+			_n_SPEED = ((n_RPM * n_TYRE_DIAMETER) / (t_GRATIOS[n_GEAR] * 336) / 5)
+			_n_SPEED = math.floor(_n_SPEED + 0.5)
+			if _n_SPEED > t_GSPEEDS_MAX[n_GEAR] then
+				if not b_CLUTCHIN then
+					b_STALLED = true -- Welp, we stalled again
+				end
+			end
+			-- If we're accelerating and our clutch is out and we aren't in neutral/reverse
+			if _n_SPEED > n_SPEED and n_GEAR ~= "n" and n_GEAR ~= "r" and not b_CLUTCHIN then
+				n_SPEED = _n_SPEED
+			-- If we're slowing down we don't care about the clutch/gears
+			elseif _n_SPEED < n_SPEED then
+				n_SPEED = _n_SPEED
+			end
 		end
 		n_TIMER_UPDATE = os.startTimer(n_TIMER_INTERVAL)
 		drawGUI()
@@ -438,6 +498,9 @@ while b_RUNNING do
 			elseif b_CLUTCHIN and n_GEAR == "n" or n_GEAR == "r" then
 				n_GEAR = 1	
 			end
+			if n_SPEED < t_GSPEEDS_MIN[n_GEAR] and not b_CLUTCHIN then
+				b_STALLED = true -- Welp, we stalled
+			end
 		elseif _id == k_GEAR_DOWN then
 			if b_CLUTCHIN and n_GEAR ~= "n" and n_GEAR ~= "r" and n_GEAR > 1 then
 				n_GEAR = n_GEAR - 1
@@ -445,6 +508,9 @@ while b_RUNNING do
 				n_REVS = _n_REVS
 			elseif b_CLUTCHIN and n_GEAR == "n" or n_GEAR == "r" then
 				n_GEAR = 1
+			end
+			if n_SPEED > t_GSPEEDS_MAX[n_GEAR] and not b_CLUTCHIN then
+				b_STALLED = true -- Welp, we stalled
 			end
 		elseif _id == k_GEAR_N then
 			if b_CLUTCHIN then
