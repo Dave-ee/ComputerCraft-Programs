@@ -16,6 +16,8 @@
 - Bass
   - Password manager that injects passwords straight into a program so you don't have to
   - Program-based password injection, allowing for multiple passwords for multiple programs
+- Dash
+  - Car simulator, l2drive a manual car
 - DISH
   - Interactive remote shell, includes a side-menu, view-only and infinite clients
 - DJShell
