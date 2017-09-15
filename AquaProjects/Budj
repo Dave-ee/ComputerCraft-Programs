@@ -1,0 +1,454 @@
+--[[
+
+	Budj
+	By Dave-ee Jones
+
+	GUI API
+	- Buttons
+	- Checkboxes
+	
+--]]
+
+-- Metatables
+BOARD = {}
+BUTTON = {}
+CHECKBOX = {}
+BOARD.__index = BOARD
+BUTTON.__index = BUTTON
+CHECKBOX.__index = CHECKBOX
+
+-- Storage tables
+local t_BOARDS = {}
+local t_BUTTONS = {}
+local t_CHECKBOXES = {}
+
+--[[ BUDJ FUNCTIONS ]]--
+
+local oldError = error
+
+function error(_STRING)
+	printError("Uh Oh! Budj errored out!")
+	printError("Error: ".._STRING)
+	oldError("",0)
+end
+
+-- Lets Budj handle events
+local heldObject = nil
+function handleEvent(...)
+	local _EVENT = { ... }
+	if _EVENT[1] == "mouse_click" then
+		if #t_BOARDS > 0 then
+			for i=1,#t_BOARDS do -- Go through all the boards
+				for v=1,#t_BOARDS[i].OBJECTS do -- Go through all objects in a Board
+					if t_BOARDS[i].OBJECTS[v].ACTIVE and t_BOARDS[i].OBJECTS[v].DRAWN then
+						if _EVENT[2] == 1 then -- Mouse button 1
+							if _EVENT[3] >= t_BOARDS[i].OBJECTS[v].X and _EVENT[3] <= (t_BOARDS[i].OBJECTS[v].X + t_BOARDS[i].OBJECTS[v].W - 1) then
+								-- If mouse X is in range of object's X bounds
+								if _EVENT[4] >= t_BOARDS[i].OBJECTS[v].Y and _EVENT[4] <= (t_BOARDS[i].OBJECTS[v].Y + t_BOARDS[i].OBJECTS[v].H - 1) then
+									-- If mouse Y is in range of object's Y bounds
+									heldObject = t_BOARDS[i].OBJECTS[v]
+									heldObject.INTERACT_STATE = "held"
+									heldObject:draw()
+									return "wait",heldObject
+								end
+							end
+						end
+					end
+				end
+			end
+		else
+			error("No boards to handle.")
+		end
+	elseif _EVENT[1] == "mouse_up" then
+		if heldObject ~= nil then
+			if heldObject.ACTIVE and heldObject.DRAWN then
+				if #t_BOARDS > 0 then
+					-- If there is at least 1 board
+					if _EVENT[2] == 1 then -- Mouse button 1
+						if _EVENT[3] >= heldObject.X and _EVENT[3] <= (heldObject.X + heldObject.W - 1) then
+							-- If mouse X is in range of object's X bounds
+							if _EVENT[4] >= heldObject.Y and _EVENT[4] <= (heldObject.Y + heldObject.H - 1) then
+								-- If mouse Y is in range of object's Y bounds
+								heldObject.INTERACT_STATE = "idle"
+								local _obj = heldObject
+								heldObject = nil
+								_obj:draw()
+								if _obj.FUNCTION then
+									-- If object has a function
+									local _arg1,_arg2 = _obj:run()
+									return true,_obj,{_arg1,_arg2} -- Do it!
+								end
+							end
+						end
+					end
+				end
+			end
+		else
+			heldObject = nil
+		end
+	end
+	return false
+end
+
+--[[ BOARD FUNCTIONS ]]--
+
+-- Creates a board
+function BOARD:new(_LABEL)
+	local self = {
+		DRAWN = false,
+		ACTIVE = true,
+		OBJECTS = {}
+	}
+	if _LABEL then
+		self.LABEL = _LABEL
+	else
+		error("Invalid or no label for BOARD.")
+	end
+	table.insert(t_BOARDS,self)
+	setmetatable(self,BOARD)
+	return self
+end
+
+-- Toggles an existing board on or off
+function BOARD:toggleActive(_B)
+	self.ACTIVE = _B or not self.ACTIVE -- Optional argument to manually change
+end
+
+-- Draws an existing board
+function BOARD:draw()
+	if self.ACTIVE then
+		for i=1,#self.OBJECTS do
+			self.OBJECTS[i]:draw()
+		end
+		self.DRAWN = true
+	end
+end
+
+-- Undraws an existing board
+function BOARD:undraw()
+	if self.ACTIVE and self.DRAWN then
+		for i=1,#self.OBJECTS do
+			self.OBJECTS[i]:undraw()
+		end
+		self.DRAWN = false
+	end
+end
+
+--[[ BUTTON FUNCTIONS ]]--
+
+-- Creates a button
+function BUTTON:new(_BOARD,_LABEL,_X,_Y,_W,_H,_TCOLOUR,_BCOLOUR,_BCOLOUR_HELD,_FILL)
+	local self = {
+		DRAWN = false,
+		ACTIVE = true,
+		INTERACT_STATE = "idle", -- States: idle, held
+		X = _X, -- _X being an integer
+		Y = _Y, -- _Y being an integer
+		W = _W, -- _W being an integer
+		H = _H, -- _H being an integer
+		TCOLOUR = _TCOLOUR, -- _TCOLOUR being a colour (integer)
+		BCOLOUR = _BCOLOUR, -- _BCOLOUR being a colour (integer)
+		BCOLOUR_HELD = _BCOLOUR_HELD,
+		INACTIVE_BCOLOUR = colors.gray,
+		FUNCTION = function() return "clicked" end -- Assigned later
+	}
+	if _FILL then
+		self.FILL = _FILL -- _FILL being a boolean
+	else
+		error("Invalid or no fill type for BUTTON.")
+	end
+	if _LABEL then
+		self.LABEL = tostring(_LABEL)
+	else
+		error("Invalid or no label for BUTTON.")
+	end
+	setmetatable(self,BUTTON)
+	self:alignLabel("left","top") -- Default alignment
+	self.ALIGNMENT_TYPE_X = "left"
+	self.ALIGNMENT_TYPE_Y = "top"
+	if _BOARD.OBJECTS then
+		self:assignBoard(_BOARD)
+	else
+		error("Invalid or no board for BUTTON.")
+	end
+	table.insert(t_BUTTONS,self)
+	return self
+end
+
+-- Assigns an existing button to an existing board
+function BUTTON:assignBoard(_BOARD)
+	if _BOARD then
+		table.insert(_BOARD.OBJECTS,self)
+		self.BOARD = _BOARD
+	else
+		error("Invalid or no board for BUTTON.")
+	end
+	self.BOARD:draw()
+end
+
+-- Assigns a function an existing button
+function BUTTON:assignFunction(_FUNCTION)
+	if _FUNCTION then
+		self.FUNCTION = _FUNCTION
+	else
+		error("Invalid or no function for BUTTON.")
+	end
+end
+
+-- Assigns a new label to an existing button
+function BUTTON:assignLabel(_LABEL)
+	if _LABEL then
+		self.LABEL = tostring(_LABEL)
+	else
+		error("Invalid or no label for BUTTON.")
+	end
+	self:alignLabel(self.ALIGNMENT_TYPE_X,self.ALIGNMENT_TYPE_Y)
+	self.BOARD:draw()
+end
+
+-- Aligns the label on the button
+-- Valid alignments for X: left, centred, right
+-- Valid alignments for Y: top, centred, bottom
+function BUTTON:alignLabel(_ALIGNMENT_X,_ALIGNMENT_Y)
+	local _SKIP = false
+	if _ALIGNMENT_X == "left" then
+		self.XLABEL = self.X
+		self.ALIGNMENT_TYPE_X = "left"
+	elseif _ALIGNMENT_X == "centered" then
+		self.XLABEL = self.X + (math.max(math.floor((self.W/2) - (#self.LABEL/2)),self.Y))
+		self.ALIGNMENT_TYPE_X = "centered"
+		if not _ALIGNMENT_Y then
+			if (self.H % 2 == 0) then
+				self.YLABEL = self.Y + (self.H / 2) - 1
+			else
+				self.YLABEL = self.Y + (self.H / 2)
+			end
+			_SKIP = true
+			self.ALIGNMENT_TYPE_Y = "centered"
+		end
+	elseif _ALIGNMENT_X == "right" then
+		self.XLABEL = ((self.X + self.W) - #self.LABEL)
+		self.ALIGNMENT_TYPE_X = "right"
+	else
+		error("Invalid or no 'X' alignment for BUTTON.")
+	end
+	if _ALIGNMENT_Y == "top" then
+		self.YLABEL = self.Y
+		self.ALIGNMENT_TYPE_Y = "top"
+	elseif _ALIGNMENT_Y == "bottom" then
+		self.YLABEL = (self.Y + self.H - 1)
+		self.ALIGNMENT_TYPE_Y = "bottom"
+	elseif _ALIGNMENT_Y == "centered" then
+		if (self.H % 2 == 0) then
+			self.YLABEL = self.Y + (self.H / 2) - 1
+		else
+			self.YLABEL = self.Y + (self.H / 2)
+		end
+		self.ALIGNMENT_TYPE_Y = "centered"
+	else
+		if not _SKIP then
+			error("Invalid or no 'Y' alignment for BUTTON.")
+		end
+	end
+end
+
+-- Draws an existing button
+function BUTTON:draw()
+	self.DRAWN = true
+	local _oldBC = term.getBackgroundColor()
+	local _oldTC = term.getTextColor()
+	local _BCOLOUR
+	local _TCOLOUR
+	if self.ACTIVE then
+		if self.INTERACT_STATE == "held" then
+			_BCOLOUR = self.BCOLOUR_HELD
+		else
+			_BCOLOUR = self.BCOLOUR
+		end
+	else
+		_BCOLOUR = self.INACTIVE_BCOLOUR
+	end
+	_TCOLOUR = self.TCOLOUR
+	if self.FILL then
+		paintutils.drawFilledBox(self.X,self.Y,(self.X+self.W-1),(self.Y+self.H-1),_BCOLOUR)
+	else
+		paintutils.drawBox(self.X,self.Y,(self.X+self.W-1),(self.Y+self.H-1),_BCOLOUR)
+	end
+	term.setCursorPos(self.XLABEL,self.YLABEL)
+	term.setTextColor(_TCOLOUR)
+	term.setBackgroundColor(_BCOLOUR)
+	write(self.LABEL)
+	term.setBackgroundColor(_oldBC)
+	term.setTextColor(_oldTC)
+end
+
+-- Undraws an existing button
+function BUTTON:undraw()
+	self.DRAWN = false
+	paintutils.drawFilledBox(self.X,self.Y,(self.X+self.W-1),(self.Y+self.H-1),term.getBackgroundColor())
+end
+
+-- Toggle if an existing button is active or not
+function BUTTON:toggleActive(_B)
+	self.ACTIVE = _B or not self.ACTIVE -- Optional argument to manually change
+	self.BOARD:draw()
+end
+
+-- Runs a function linked to an existing button
+function BUTTON:run()
+	return self.FUNCTION()
+end
+
+--[[ CHECKBOX FUNCTIONS ]]--
+
+-- Create a new checkbox
+function CHECKBOX:new(_BOARD,_LABEL,_X,_Y,_TCOLOUR,_TBCOLOUR,_FCOLOUR,_BCOLOUR,_BCOLOUR_HELD)
+	local self = {
+		DRAWN = false,
+		ACTIVE = true,
+		STATE = false,
+		X = _X,
+		Y = _Y,
+		W = 1,
+		H = 1,
+		TCOLOUR = _TCOLOUR,
+		TBCOLOUR = _TBCOLOUR,
+		FCOLOUR = _FCOLOUR,
+		BCOLOUR = _BCOLOUR,
+		BCOLOUR_HELD = _BCOLOUR_HELD,
+		INACTIVE_BCOLOUR = colors.gray,
+		FUNCTION = function() return nil end
+	}
+	if _LABEL then
+		self.LABEL = tostring(_LABEL)
+	else
+		error("Invalid or no label for CHECKBOX.")
+	end
+	setmetatable(self,CHECKBOX)
+	self:alignLabel("right") -- Default alignment
+	self.ALIGNMENT_TYPE_X = "right"
+	self.FUNCTION = function() return self:getState() end
+	if _BOARD.OBJECTS then
+		self:assignBoard(_BOARD)
+	else
+		error("Invalid or no board for CHECKBOX.")
+	end
+	table.insert(t_CHECKBOXES,self)
+	return self
+end
+
+-- Assigns an existing checkbox to an existing board
+function CHECKBOX:assignBoard(_BOARD)
+	if _BOARD then
+		table.insert(_BOARD.OBJECTS,self)
+		self.BOARD = _BOARD
+	else
+		error("Invalid or no board for CHECKBOX.")
+	end
+	self.BOARD:draw()
+end
+
+-- Assigns a function an existing checkbox
+function CHECKBOX:assignFunction(_FUNCTION)
+	if _FUNCTION then
+		self.FUNCTION = _FUNCTION
+	else
+		error("Invalid or no function for CHECKBOX.")
+	end
+end
+
+-- Assigns a new label to an existing checkbox
+function CHECKBOX:assignLabel(_LABEL)
+	if _LABEL then
+		self.LABEL = tostring(_LABEL)
+	else
+		error("Invalid or no label for CHECKBOX.")
+	end
+	self:alignLabel(self.ALIGNMENT_TYPE_X)
+	self.BOARD:draw()
+end
+
+-- Align the label of an existing checkbox
+-- Valid arguments for X: left, right (either side of checkbox)
+function CHECKBOX:alignLabel(_ALIGNMENT_X)
+	if _ALIGNMENT_X == "left" then
+		self.XLABEL = (self.X - #self.LABEL - 1)
+	elseif _ALIGNMENT_X == "right" then
+		self.XLABEL = self.X + 2
+	else
+		error("Invalid or no 'X' alignment for CHECKBOX.")
+	end
+end
+
+-- Toggle if an existing checkbox is active or not
+function CHECKBOX:toggleActive(_B)
+	self.ACTIVE = _B or not self.ACTIVE -- Optional argument to manually change
+	self.BOARD:draw()
+end
+
+-- Toggle the status of a checkbox
+function CHECKBOX:toggleState()
+	self.STATE = not self.STATE
+	self.BOARD:draw()
+	return self.STATE
+end
+
+-- Get the status of a checkbox
+function CHECKBOX:getState()
+	return self.STATE
+end
+
+-- Runs a function linked to an existing checkbox
+function CHECKBOX:run()
+	return self.FUNCTION(),self:toggleState()
+end
+
+-- Clears the drawn version of an existing checkbox
+function CHECKBOX:undraw()
+	self.DRAWN = false
+	local _oldBC = term.getBackgroundColor()
+	local _oldTC = term.getTextColor()
+	term.setCursorPos(self.X,self.Y)
+	term.setBackgroundColor(self.TBCOLOUR)
+	write(" ")
+	term.setCursorPos(self.XLABEL,self.Y)
+	for i=1,#self.LABEL do
+		write(" ")
+	end
+	term.setBackgroundColor(_oldBC)
+	term.setTextColor(_oldTC)
+end
+
+-- Draws an existing checkbox
+function CHECKBOX:draw()
+	self.DRAWN = true
+	local _oldBC = term.getBackgroundColor()
+	local _oldTC = term.getTextColor()
+	local _BCOLOUR
+	local _TCOLOUR
+	if self.ACTIVE then
+		if self.INTERACT_STATE == "held" then
+			_BCOLOUR = self.BCOLOUR_HELD
+		else
+			_BCOLOUR = self.BCOLOUR
+		end
+		_TCOLOUR = self.TCOLOUR
+	else
+		_BCOLOUR = self.INACTIVE_BCOLOUR
+		_TCOLOUR = self.INACTIVE_TCOLOUR
+	end
+	term.setCursorPos(self.X,self.Y)
+	term.setTextColor(self.FCOLOUR)
+	term.setBackgroundColor(_BCOLOUR)
+	if self.STATE then
+		write("\4")
+	else
+		write(" ")
+	end
+	term.setTextColor(_TCOLOUR)
+	term.setBackgroundColor(self.TBCOLOUR)
+	term.setCursorPos(self.XLABEL,self.Y)
+	write(self.LABEL)
+	term.setBackgroundColor(_oldBC)
+	term.setTextColor(_oldTC)
+end
