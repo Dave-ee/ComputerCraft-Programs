@@ -1,6 +1,7 @@
 # ComputerCraft Programs
 #### ComputerCraft programs I have created (and bothered to upload)
 #### NOTE: None of my OS' are uploaded here, so keep that in mind
+#### For my other programs not found here, refer to my [Pastebin](https://pastebin.com/u/AquaJD).
 
 ### Floppy hacks
 - DUCCY
