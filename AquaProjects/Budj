@@ -4,8 +4,9 @@
 	By Dave-ee Jones
 
 	GUI API
-	- Buttons
-	- Checkboxes
+	- Boards (things you stick GUI objects on)
+	- Buttons (things you click)
+	- Checkboxes (things you toggle)
 	
 --]]
 
@@ -117,6 +118,7 @@ end
 -- Draws an existing board
 function BOARD:draw()
 	if self.ACTIVE then
+		self:undraw()
 		for i=1,#self.OBJECTS do
 			self.OBJECTS[i]:draw()
 		end
@@ -254,7 +256,7 @@ end
 
 -- Draws an existing button
 function BUTTON:draw()
-	self.DRAWN = true
+	self:undraw()
 	local _oldBC = term.getBackgroundColor()
 	local _oldTC = term.getTextColor()
 	local _BCOLOUR
@@ -280,6 +282,7 @@ function BUTTON:draw()
 	write(self.LABEL)
 	term.setBackgroundColor(_oldBC)
 	term.setTextColor(_oldTC)
+	self.DRAWN = true
 end
 
 -- Undraws an existing button
