@@ -4,7 +4,7 @@
 
 ### Floppy hacks
 - DUCCY
-  - Injects keystrokes into read() functions that are called on startup (like login screens)
+  - Injects keystrokes into read() functions, specifically made for startup login screens
 
 ### Modem
 - PacketSniffer
