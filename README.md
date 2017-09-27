@@ -29,6 +29,8 @@
   - Security shell, allowing guest users to use the computer without griefing
 - EMAL
   - Event Monitoring and Logging (logs events to a file)
+- Host
+  - Easy-to-use, lightweight local DNS API
 - HSH
   - Remotely control shells with extra options like view-only and an emergency stop key
   - EXPERIMENTAL, replaced by DISH
