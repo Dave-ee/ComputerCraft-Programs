@@ -1,0 +1,113 @@
+--[[
+
+	host
+	By Dave-ee Jones
+	
+	Local DNS hosting
+	Uses file system instead of RAM
+
+--]]
+
+local DIR = ".hosts"
+if not fs.exists(DIR) then
+  fs.makeDir(DIR)
+end
+
+-- Create a new entry
+function new(_NAME,_ID)
+	if type(_NAME) == "string" then
+		if type(_ID) == "number" then
+			local _f = fs.open(DIR.."/".._NAME,"w")
+			_f.write(_ID)
+			_f.close()
+			return true
+		else
+			error("host: ID needs to be a number",0)
+		end
+	else
+		error("host: NAME needs to be a string",0)
+	end
+end
+
+-- Change the ID of the name given
+function setID(_NAME,_ID)
+	if type(_NAME) == "string" then
+		if type(_ID) == "number" then
+			if fs.exists(DIR.."/".._NAME) then
+				local _f = fs.open(DIR.."/".._NAME,"w")
+				_f.write(_ID)
+				_f.close()
+				return true
+			else
+				error("host: Record for ".._NAME.." doesn't exist",0)
+			end
+		else
+			error("host: ID needs to be a number",0)
+		end
+	end
+	return false
+end
+
+-- Change the name of the ID given
+function setName(_ID,_NAME)
+	if type(_ID) == "number" then
+		local b_FOUND = false
+		for k,v in pairs(fs.list(DIR)) do
+			local _f = fs.open(DIR.."/"..v,"w")
+			local _contents = _f.readAll()
+			_f.close()
+			if tonumber(_contents) == _ID then
+				b_FOUND = true
+				delete(k)
+				new(_NAME,_ID)
+			end
+		end
+		if not b_FOUND then
+			error("host: Record for "..tostring(_ID).." doesn't exist",0)
+		end
+	else
+		error("host: NAME needs to be a string",0)
+	end
+end
+
+-- Returns name of ID given or false if there isn't one
+function getName(_ID)
+	if type(_ID) == "number" then
+		for k,v in pairs(fs.list(DIR)) do
+			local _f = fs.open(DIR.."/"..v,"r")
+			local _contents = _f.readAll()
+			_f.close()
+			if tonumber(_contents) == _ID then
+				return v
+			end
+		end
+	else
+		error("host: ID needs to be a number",0)
+	end
+	return false
+end
+
+-- Returns ID of name given or false if there isn't one
+function getID(_NAME)
+	if type(_NAME) == "string" then
+		if fs.exists(DIR.."/".._NAME) then
+			local _f = fs.open(DIR.."/".._NAME,"r")
+			local _contents = _f.readAll()
+			_f.close()
+			return tonumber(_contents)
+		else
+			return false
+		end
+	else
+		error("host: NAME needs to be a string",0)
+	end
+end
+
+-- Deletes a DNS entry
+function delete(_NAME)
+	if fs.exists(DIR.."/".._NAME) then
+		fs.delete(DIR.."/".._NAME)
+		return true
+	end
+	return false
+end
