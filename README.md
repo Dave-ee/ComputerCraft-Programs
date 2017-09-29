@@ -31,6 +31,8 @@
   - Event Monitoring and Logging (logs events to a file)
 - Host
   - Easy-to-use, lightweight local DNS API
+  - HostFS uses the file system to store entries (persistence)
+  - HostRAM uses RAM to store entries (no persistence)
 - HSH
   - Remotely control shells with extra options like view-only and an emergency stop key
   - EXPERIMENTAL, replaced by DISH
