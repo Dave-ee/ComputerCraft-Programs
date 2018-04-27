@@ -1,0 +1,45 @@
+local t_ARGS = { ... }
+
+if #t_ARGS < 2 then
+	printError("dosh <path-to-dex> <string>")
+	error("",0)
+end
+if not fs.exists(t_ARGS[1]) then
+	error("File not found")
+end
+local f = fs.open(t_ARGS[1],"r")
+local t_NUMBERDEX = textutils.unserialize(f.readAll())
+f.close()
+
+local s = t_ARGS[2]
+local sRevbyted = ""
+local sRevbytedSalted = ""
+local sRevbytedSaltedDexed = ""
+local sRevbytedSaltedDexedRevdexed = ""
+local sRevbytedSaltedDexedRevdexedChared = ""
+for i=1,#s do
+	if i % 2 == 0 then -- Check if even
+		sRevbyted = sRevbyted..tostring(string.byte(string.sub(s,i,i)))
+	else -- If odd, reverse the byte - e.g. 106 goes to 601
+		sRevbyted = sRevbyted..tostring(string.reverse(string.byte(string.sub(s,i,i))))
+	end
+end
+print("1: "..sRevbyted)
+sRevbytedSalted = t_NUMBERDEX[tonumber(string.sub(sRevbyted,1,1))]..sRevbyted -- A tad of "dynamic" salt
+print("2: "..sRevbytedSalted)
+for i=1,#sRevbytedSalted do -- this part could be done multiple times, but eventually the string would be HUUUUUUUUUUUUGE
+	sRevbytedSaltedDexed = sRevbytedSaltedDexed..t_NUMBERDEX[tonumber(string.sub(sRevbytedSalted,i,i))+1]
+end
+print("3: "..sRevbytedSaltedDexed)
+for i=1,#sRevbytedSaltedDexed do
+	sRevbytedSaltedDexedRevdexed = t_NUMBERDEX[tonumber(string.sub(sRevbytedSaltedDexed,i,i))+11]..sRevbytedSaltedDexedRevdexed
+end
+print("4: "..sRevbytedSaltedDexedRevdexed)
+for i=1,#sRevbytedSaltedDexedRevdexed do
+	if #sRevbytedSaltedDexedRevdexed > i then
+		sRevbytedSaltedDexedRevdexedChared = sRevbytedSaltedDexedRevdexedChared..string.char(string.sub(sRevbytedSaltedDexedRevdexed,i,i+1))
+	else
+		sRevbytedSaltedDexedRevdexedChared = sRevbytedSaltedDexedRevdexedChared..string.char(string.sub(sRevbytedSaltedDexedRevdexed,i,i))
+	end
+end
+print("5: "..sRevbytedSaltedDexedRevdexedChared)
