@@ -25,7 +25,7 @@ for i=1,#s do
 	end
 end
 print("1: "..sRevbyted)
-sRevbytedSalted = t_NUMBERDEX[tonumber(string.sub(sRevbyted,1,1))]..sRevbyted -- A tad of "dynamic" salt
+sRevbytedSalted = t_NUMBERDEX[tonumber(string.sub(sRevbyted,1,1))+1]..sRevbyted -- A tad of "dynamic" salt
 print("2: "..sRevbytedSalted)
 for i=1,#sRevbytedSalted do -- this part could be done multiple times, but eventually the string would be HUUUUUUUUUUUUGE
 	sRevbytedSaltedDexed = sRevbytedSaltedDexed..t_NUMBERDEX[tonumber(string.sub(sRevbytedSalted,i,i))+1]
